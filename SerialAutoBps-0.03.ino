@@ -1,41 +1,47 @@
-// derived from retrolefty's auto baud - posted 30 March 2012
-// https://forum.arduino.cc/index.php?topic=98911.15
-// https://forum.arduino.cc/index.php?topic=98911.msg742530#msg742530
 /*
-  First stab at a auto baudrate detection function. This uses the pulseIn command
-  to determine what speed an unknown serial link is running at. Detects and sets the standard baud
-  rates supported by the Arduino IDE serial monitor. Uses character "U" as a test character
+  hcofiver TODO hcbtat
+  * OTA config tool for HC-05 or similar Bluetooth SPP modules
+  * autodetect serial bit rate
+  * UI over Bluetooth connection
+  * compatible with Digispark (ATtiny85)
+  * suitable for dedicated standalone device
+  Copyright 2019 Paul McClay <mcclay at g mail>
+  MIT License https://opensource.org/licenses/MIT
 
-  I'm sure characters with multible zero bits in a row may fake out proper detection. If data is
-  garbled in the serial monitor then the auto baud rate function failed.
+  Detect serial bit rate
+  Using detected rate, prompt for new rate
+  Configure HC-05 or similar for new rate
 
-  This is just a demo sketch to show concept. After uploading the sketch, open the serial monitor
-  and pick a random baudrate and then start sending U charaters. The monitor will print out
-  what baudrate it detected. It will default to 9600 baud if found a bit
-  width too long for a standard rate used by the serial monitor. Note that as written, this is a
-  'blocking' function that will wait forever if no character are being sent.
+  Bit rate detection method derived from example by retrolefty:
+  * Loop pulsein() to measure shortest of n line state periods
+  * Compare with static list of geometric means of bit times for canonical rates
+  * Favor "U" for test character
+  There are no invalid rates within min-max range; 3300 is 2400 and 3400 is 4800
+  Rate breaks are approximated to round numbers. Doubtful that anything critically close to a rate break would work either way.
+  https://forum.arduino.cc/index.php?topic=98911.15 posted 30 March 2012
+ */
 
-  Note that while the serial monitor has a 300 baud option, the Arduino hardware serial library
-  does not seem to support that baud rate, at least for version 22, in my testing.
 
-  By "retrolefty" 1/22/11
-*/
-
-#ifdef ARDUINO_AVR_DIGISPARK // generalize to other ATTiny?
-#include <SoftSerial_INT0.h>
-const uint8_t recPin = 2; // also used elsewhere
-SoftSerial mySerial(2, 0); // Rx, Tx TODO
+#ifdef ARDUINO_AVR_DIGISPARK // generalize to other ATtiny?
+// #include <SoftSerial_INT0.h> // smaller
+#include <SoftSerial.h> // this fits now
+const uint8_t serialRxPin = 2; // also compatible with Digispark_SoftSerial-INT0
+SoftSerial mySerial(2, 0);
 #define Serial mySerial
-#else // not a DigiSpark
+
+#else // not a Digispark
 // assume hardware serial with receive on pin 0
-const uint8_t recPin = 0;
+const uint8_t serialRxPin = 0;
 #endif
 
-long bps;   // global in case useful elsewhere in a sketch
-#define temp bps // overload bps for memory frugality
-int bitTime; // micros - also global
-const uint8_t samples = 8; // number of mark bits to measure
-const int patience = 1000;
+long bps;
+// TODO #define temp bps // overload bps for memory frugality
+int bitTime; // in micros
+const uint8_t samples = 8; // number of mark/1/high bits to measure
+                           // any >1 non-extended ASCII chars will have 010 msb-stop-start sequence
+                           // which will work if stop is one bit time
+                           // send 0x0000 to time stop bit
+const int patience = 1000; // millis allowance for human reaction
 const uint8_t maxNameLen = 32; // max 32 chars per at least one reference
 char deviceName[maxNameLen + 1]; // +1 nul terminator
 int8_t chrPtr;
@@ -56,55 +62,60 @@ const struct rateParms rateParms[] {
   {14400, 90},
   {9600, 150},
   {4800, 300},
-  {2400, 600},
-  {1200, 1200},
-  {0, 2400} // too slow
+  {2400, 600}
 };
 
-const uint8_t numRates = sizeof(rateParms) / sizeof(struct rateParms);
+const uint8_t numRates = (sizeof(rateParms) / sizeof(struct rateParms)) - 1; // n-1 non-error rates
 
 void discardInput() {
-  delay(1); // time to receive a byte at 1200 bps
+  delay(5); // follow-on bytes can be slow
   while (Serial.available()) {
     Serial.read();
-    delay(1);
+    delay(5);
   }
 }
 
 void setup()
 {
   // blast out all the preferred rates - should display one recognizable number amidst noise
-  for (uint8_t a = 1; a <= numRates; a++) // start after first; end before last
+  // TODO rateIdx?
+  for (uint8_t a = 1; a <= numRates; a++) // start after first; end before last // TODO or skip first
   {
     Serial.begin(rateParms[a].bps);
     Serial.println();
-    // terse, otherwise slow to send at several slower rates
+    Serial.println();
+    Serial.print(F("This is "));
     Serial.print(rateParms[a].bps, DEC);
-    Serial.println(F(" send 'U'"));
+    Serial.println(F(" bps. Type something. 'U' is robust."));
+    Serial.println();
     Serial.end();
     delay(2); // seems to help the next slower rate start esp. for slowest rates TODO how
   }
 
-  pinMode(recPin, INPUT);      // make sure serial in is a input pin
-  digitalWrite (recPin, HIGH); // pull up enabled just for noise protection
+  pinMode(serialRxPin, INPUT);      // make sure serial in is a input pin
+  digitalWrite (serialRxPin, HIGH); // pull up enabled just for noise protection
 
   do {
-    bitTime = rateParms[numRates - 1].maxMicros + 1; // longer than any time we care about
-    while (digitalRead(recPin) == HIGH) {} // wait for input low
+    bitTime = rateParms[numRates].maxMicros; // longer than any accepted bit duration
     for (uint8_t a = 0; a < samples; a++)
     {
-      cli(); // yes, disable interrupts. doc is rwong. this works.
-      temp = pulseIn(recPin, HIGH, bitTime);  // measure the next mark bit width - up to shortest already recorded
+      cli(); // yes, disable interrupts. since ~2015.
+      long temp = pulseIn(serialRxPin, HIGH, bitTime);  // measure the next mark bit width - up to shortest already recorded
       sei();
-      if (temp > 0) // if not too long (0) or too short (-1)
-        bitTime = temp; // timeout limits detections to no longer than shortest so far
+      if (temp)
+        bitTime = temp; // only decrease - timeout limits detections to no longer than shortest so far
     }
-    uint8_t a = 0;
-    while (bitTime > rateParms[a].maxMicros && a < numRates - 1) a++; // scan for nearest preferred rate
-    bps = rateParms[a].bps;
+    if (bitTime == rateParms[numRates].maxMicros)
+      bps=0;
+    else {
+      uint8_t a = 0;
+      while (bitTime >= rateParms[a].maxMicros && a < numRates) a++; // scan for nearest preferred rate
+      bps = rateParms[a].bps;
+    }
   } while (bps < 1); // i.e. until bit rate found within range
 
   Serial.begin(bps);
+  Serial.println();
   Serial.println();
   Serial.print(F("Hello at "));
   Serial.print(bps, DEC);
@@ -115,7 +126,7 @@ void setup()
 
 
   Serial.println();
-  Serial.println(F("HC-05 configutron"));
+  Serial.println(F("hcofiver HC-05 configutron"));
   Serial.println();
 
   discardInput();
@@ -161,7 +172,7 @@ void setup()
   Serial.println();
   discardInput();
   Serial.println("Select new serial speed");
-  for (uint8_t a = 1; a < numRates - 1; a++) {
+  for (uint8_t a = 1; a <= numRates; a++) {
     Serial.print((char) (a + 'a' - 1));
     Serial.print(": ");
     Serial.println(rateParms[a].bps);
@@ -169,8 +180,8 @@ void setup()
   bps = 0; // re-use
   do {
     while (!Serial.available()); // wait for input
-    uint8_t speed = Serial.read() - 'a' + 1;
-    if (speed < numRates)
+    uint8_t speed = (Serial.read() - 'A' + 1) & 0b11011111; // fold case
+    if (speed > 0 && speed <= numRates)
       bps = rateParms[speed].bps;
   } while (bps == 0);
 
@@ -210,9 +221,6 @@ void setup()
   Serial.print("AT+UART=");
   Serial.print(bps);
   Serial.println(",0,0");
-  /*delay(100);
-  Serial.println("AT+RESET"); //doesn't work on at least one HC-05*/
-  delay(1000);
 }
 
 
@@ -221,13 +229,6 @@ void setup()
 
 void loop()
 {
-  //would be more cool to switch to new rate and say so -- if AT+RESET worked
   delay(1000);
   Serial.println("power cycle/reset HC-05");
-
-  /*if (Serial.available()) {
-    // get incoming byte:
-    int inByte = Serial.read();
-    Serial.println(inByte, BIN);
-    }*/
 }
