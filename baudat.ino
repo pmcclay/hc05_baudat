@@ -24,20 +24,89 @@
 
 
 #ifdef ARDUINO_AVR_DIGISPARK // Runs on Digispark. (Generalize to other ATtiny?)
+//#ifdef ARDUINO_AVR_ATTINYX5 TODO
 // TODO hw project URL
 // Use Digispark_SoftSerial-INT0 library
 // https://github.com/J-Rios/Digispark_SoftSerial-INT0/archive/master.zip
 // Early Digispark bootloaders may calibrate clock only when connected to a real USB host.
 // See https://digistump.com/wiki/digispark/tricks "Detect if system clock was calibrated".
-#include <SoftSerial_INT0.h> // This one goes to 11 (11.52 myriabits/sec)
+#include <SoftSerial_INT0.h> // This one goes to 11 (11.52 myriabits/sec) and saves ~240 bytes
 // #include <SoftSerial.h> // Supplied in IDE, but limited to 57.6k
+
+/*
+ * Using readBytesUntil, but Digispark core lacks.
+ * Could use e.g. https://github.com/SpenceKonde/ATTinyCore but would rather keep save-and-upload compat with Arduino + Digispark board pkg
+ * -- but already kinda breaking that with SS_INT0
+ * Maybe add the missing methods a la https://stackoverflow.com/questions/18804402/add-a-method-to-existing-c-class-in-other-file
+ * Maybe within #ifdef to keep single file but then harder to read this.
+ * If using github, then maybe not so bad to have another file.
+ * Or conditionally define READBYTES as Serial.readBytes or local readBytes function without trying to fake the class member
+ * Or copy the readBytes (readBytesUntil, timedRead, setTimeout) code here as local fcns for all
+ * TODO
+ */
+/*
+class SoftSerialAdd : public SoftSerial {
+  // Selected parts copied from core Stream.h/.cpp
+  protected:
+    unsigned long _timeout;      // number of milliseconds to wait for the next char before aborting timed read
+    unsigned long _startMillis;  // used for timeout measurement
+    int timedRead() {
+      int c;
+      _startMillis = millis();
+      do {
+        c = read();
+        if (c >= 0) return c;
+      } while(millis() - _startMillis < _timeout);
+      return -1;     // -1 indicates timeout
+    };
+  public:
+    SoftSerialAdd(uint8_t receivePin, uint8_t transmitPin, bool inverse_logic = false) :
+      SoftSerial(receivePin, transmitPin, inverse_logic) {}
+    void setTimeout(unsigned long timeout) {
+      _timeout = timeout;
+    }
+    size_t readBytesUntil( char terminator, char *buffer, size_t length) {
+      size_t index = 0;
+      while (index < length) {
+        int c = timedRead();
+        if (c < 0 || c == terminator) break;
+        *buffer++ = (char)c;
+        index++;
+      }
+      return index; // return number of characters, not including null terminator
+    }
+  // End copy from core Stream.h/.cpp
+};
+*/
+
+size_t tinyReadBytesUntil(char terminator, char *buffer, /*size_t*/ uint8_t length, long timeout) {
+  /*size_t*/ uint8_t index = 0;
+  while (index < length) {
+//    int c = timedRead();
+
+    int c;
+    unsigned long _startMillis = millis();
+    do {
+      c = Serial.read();
+      if (c >= 0) break;
+    } while(millis() - _startMillis < timeout);
+//    return -1;     // -1 indicates timeout
+    
+    if (c < 0 || c == terminator) break;
+    *buffer++ = (char)c;
+    index++;
+  }
+  return index; // return number of characters, not including null terminator
+}
 const uint8_t serialRxPin = 2; // required by Digispark_SoftSerial-INT0
+//SoftSerialAdd mySerial(2, 0);
 SoftSerial mySerial(2, 0);
 #define Serial mySerial
 const uint8_t textBufferSize = _SS_MAX_RX_BUFF;
 #define USECVAR 3 // accept +/- 1/(2^3) variation of bit time in uSec
                   // Digispark clock may vary. If marginal, usually at least 1st char received is good. HC-05s seem to receive marginal rates well
 #define LED_BUILTIN 1
+
 
 #else // not a Digispark
 // assume hardware serial with receive on pin 0
@@ -120,10 +189,10 @@ void commandStart() {
   Serial.println(F("Get ready to press the HC-05 command mode button ..."));
   Serial.println(F("Press when LED lights; release when LED flashes."));
   discardInput();
-  Serial.println("Ready? [any key]");
+  Serial.println(F("Ready? [any key]"));
   while (!Serial.available());
   discardInput();
-  Serial.println("Go...");
+  Serial.println(F("Go..."));
   digitalWrite(LED_BUILTIN, HIGH);
   delay(2000);
 }
@@ -253,8 +322,10 @@ do {
 //          Serial.write(textBuffer[chrPtr]);
       } while (textBuffer[chrPtr] != '\0'); // i.e. until terminated
 */
-      Serial.setTimeout(60000);
-      textBuffer[Serial.readBytesUntil('\r', textBuffer, maxNameLen)] = '\0';
+
+//      Serial.setTimeout(60000);
+//      textBuffer[Serial.readBytesUntil('\r', textBuffer, maxNameLen)] = '\0';
+textBuffer[tinyReadBytesUntil('\r', textBuffer, maxNameLen, 60000)] = '\0';
       Serial.println(textBuffer);
     } else textBuffer[0] = '\0'; // null name = no change
   
@@ -274,10 +345,10 @@ do {
   
     Serial.println();
 
-    Serial.println("Select new serial speed");
+    Serial.println(F("Select new serial speed"));
     for (uint8_t a = 0; a < numRates; a++) {
       Serial.print((char) (a + 'a'));
-      Serial.print(": ");
+      Serial.print(F(": "));
       Serial.println(rateParms[a].bps);
     }
     bps = 0; // re-use
@@ -301,42 +372,42 @@ do {
     Serial.print(F("speed "));
     Serial.println(bps, DEC);
     Serial.println();
-  
+
 /*    Serial.println(F("Get ready to press the HC-05 command mode button for ~5 seconds..."));
     discardInput();
-    Serial.println("ready?");
+    Serial.println(F("ready?"));
     while (!Serial.available());
     discardInput();
-    Serial.println("go...");
+    Serial.println(F("go..."));
     delay(2000);
 */
 
     commandStart();
     
     if (textBuffer[0]) {
-      Serial.print("AT+NAME=");
+      Serial.print(F("AT+NAME="));
       Serial.println(textBuffer);
       Serial.flush();
       delay(100);
     }
     if (polarity) {
-      Serial.print("AT+POLAR=1,");
+      Serial.print(F("AT+POLAR=1,"));
       Serial.println((char) polarity);
       Serial.flush();
       delay(100);
     }
-    Serial.print("AT+UART=");
+    Serial.print(F("AT+UART="));
     Serial.print(bps);
-    Serial.println(",0,0");
+    Serial.println(F(",0,0"));
 
     commandStop();
     
     while(true) {
       delay(1000);
-      Serial.println("power cycle/reset HC-05");
+      Serial.println(F("power cycle/reset HC-05"));
     }
   }
-} 
+}
 
 
 
@@ -344,18 +415,20 @@ do {
 
 void loop()
 {
-  Serial.print("Enter AT command: AT");
+  Serial.print(F("Enter AT command: AT"));
   discardInput();
-  Serial.setTimeout(LONG_MAX);
-  textBuffer[Serial.readBytesUntil('\r', textBuffer, textBufferSize-1)] = '\0';
+//  Serial.setTimeout(LONG_MAX);
+//  textBuffer[Serial.readBytesUntil('\r', textBuffer, textBufferSize-1)] = '\0';
+textBuffer[tinyReadBytesUntil('\r', textBuffer, textBufferSize-1, LONG_MAX)] = '\0';
   Serial.println(textBuffer);
   commandStart();
   discardInput();
   Serial.print(F("AT"));
   Serial.println(textBuffer);
   Serial.flush();
-  Serial.setTimeout(1000);
-  textBuffer[Serial.readBytes(textBuffer, textBufferSize-1)] = '\0';
+//  Serial.setTimeout(1000);
+//  textBuffer[Serial.readBytesUntil('\0', textBuffer, textBufferSize-1)] = '\0'; // not expecting \0; using readBytesUntil to avoid adding readBytes to code size
+textBuffer[tinyReadBytesUntil('\0', textBuffer, textBufferSize-1, 1000)] = '\0';
   commandStop();
   Serial.println(F("Result:"));
   Serial.println(textBuffer);
