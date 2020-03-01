@@ -78,9 +78,9 @@ class SoftSerialAdd : public SoftSerial {
   // End copy from core Stream.h/.cpp
 };
 */
-
-size_t tinyReadBytesUntil(char terminator, char *buffer, /*size_t*/ uint8_t length, long timeout) {
-  /*size_t*/ uint8_t index = 0;
+/*
+size_t tinyReadBytesUntil(char terminator, char *buffer, /*size_t*//* uint8_t length, long timeout) {
+  /*size_t*//* uint8_t index = 0;
   while (index < length) {
 //    int c = timedRead();
 
@@ -98,6 +98,7 @@ size_t tinyReadBytesUntil(char terminator, char *buffer, /*size_t*/ uint8_t leng
   }
   return index; // return number of characters, not including null terminator
 }
+*/
 const uint8_t serialRxPin = 2; // required by Digispark_SoftSerial-INT0
 //SoftSerialAdd mySerial(2, 0);
 SoftSerial mySerial(2, 0);
@@ -206,6 +207,25 @@ void commandStop() {
   delay(2000);
 }
 
+size_t tinyReadBytesUntil(char terminator, char *buffer, /*size_t*/ uint8_t length, long timeout) {
+  /*size_t*/ uint8_t index = 0;
+  while (index < length) {
+//    int c = timedRead();
+
+    int c;
+    unsigned long _startMillis = millis();
+    do {
+      c = Serial.read();
+      if (c >= 0) break;
+    } while(millis() - _startMillis < timeout);
+//    return -1;     // -1 indicates timeout
+    
+    if (c < 0 || c == terminator) break;
+    *buffer++ = (char)c;
+    index++;
+  }
+  return index; // return number of characters, not including null terminator
+}
 void setup()
 {
   // TODO benefit?
@@ -415,7 +435,7 @@ textBuffer[tinyReadBytesUntil('\r', textBuffer, maxNameLen, 60000)] = '\0';
 
 void loop()
 {
-  Serial.print(F("Enter AT command: AT"));
+  Serial.print(F("Enter command: AT"));
   discardInput();
 //  Serial.setTimeout(LONG_MAX);
 //  textBuffer[Serial.readBytesUntil('\r', textBuffer, textBufferSize-1)] = '\0';
