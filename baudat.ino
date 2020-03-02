@@ -4,123 +4,82 @@
 
 /*
   baudat -- an OTA config tool for HC-05 or similar Bluetooth SPP modules
+  * UI over Bluetooth connection
   * immediately indicate serial/UART bit rate/bps
   * autodetect serial bit rate
-  * UI over Bluetooth connection
   * compatible with Digispark (ATtiny85)
-  * suitable for dedicated standalone device
+  * suitable for dedicated device
+  * e.g. TODO hw project link
   Copyright 2019 Paul McClay <mcclay at g mail>
   MIT License https://opensource.org/licenses/MIT
 
-  Send banner at all rates -- legible banner indicates configured bps
-  Detect serial bit rate
-  Using detected rate, prompt for new name/polarity/rate
-  Configure HC-05 or similar for new rate
+  Setup:
+    Send banner at all rates -- legible banner indicates configured bps
+    Detect serial bit rate
+    Begin Serial stream at detected rate
+    Ask: guided prompts for new name/polarity/rate?
+      Prompt for new info
+      Prompt user to switch HC-05 to command mode
+      Configure HC-05 -- new bit rate not effective until restart
+      loop forever: at old bit rate prompt to reset HC-05
 
+  Loop:   // reached only if user declines guided config
+    Prompt for AT command
+    Prompt user to switch HC-05 to command mode
+    Send command to HC-05
+    Read/Store response from HC-05
+    Prompt user to release HC-05 command mode
+    Display stored HC-05 response
+  
   Bit rate detection started with example by retrolefty:
   https://forum.arduino.cc/index.php?topic=98911.15 posted 30 March 2012
   and has evolved to mostly different.
  */
 
 
-#ifdef ARDUINO_AVR_DIGISPARK // Runs on Digispark. (Generalize to other ATtiny?)
-//#ifdef ARDUINO_AVR_ATTINYX5 TODO
+#ifdef ARDUINO_AVR_DIGISPARK // Runs on Digispark ATtiny85. (Generalize to other ATtiny?)
+
 // TODO hw project URL
-// Use Digispark_SoftSerial-INT0 library
-// https://github.com/J-Rios/Digispark_SoftSerial-INT0/archive/master.zip
+
 // Early Digispark bootloaders may calibrate clock only when connected to a real USB host.
 // See https://digistump.com/wiki/digispark/tricks "Detect if system clock was calibrated".
+
+//#ifdef ARDUINO_AVR_ATTINYX5 -- maybe when pulseIn() works better
+
+#define LED_BUILTIN 1 // early units may have LED on pin 0
+
+// Use Digispark_SoftSerial-INT0 library
+// https://github.com/J-Rios/Digispark_SoftSerial-INT0/archive/master.zip
 #include <SoftSerial_INT0.h> // This one goes to 11 (11.52 myriabits/sec) and saves ~240 bytes
-// #include <SoftSerial.h> // Supplied in IDE, but limited to 57.6k
-
-/*
- * Using readBytesUntil, but Digispark core lacks.
- * Could use e.g. https://github.com/SpenceKonde/ATTinyCore but would rather keep save-and-upload compat with Arduino + Digispark board pkg
- * -- but already kinda breaking that with SS_INT0
- * Maybe add the missing methods a la https://stackoverflow.com/questions/18804402/add-a-method-to-existing-c-class-in-other-file
- * Maybe within #ifdef to keep single file but then harder to read this.
- * If using github, then maybe not so bad to have another file.
- * Or conditionally define READBYTES as Serial.readBytes or local readBytes function without trying to fake the class member
- * Or copy the readBytes (readBytesUntil, timedRead, setTimeout) code here as local fcns for all
- * TODO
- */
-/*
-class SoftSerialAdd : public SoftSerial {
-  // Selected parts copied from core Stream.h/.cpp
-  protected:
-    unsigned long _timeout;      // number of milliseconds to wait for the next char before aborting timed read
-    unsigned long _startMillis;  // used for timeout measurement
-    int timedRead() {
-      int c;
-      _startMillis = millis();
-      do {
-        c = read();
-        if (c >= 0) return c;
-      } while(millis() - _startMillis < _timeout);
-      return -1;     // -1 indicates timeout
-    };
-  public:
-    SoftSerialAdd(uint8_t receivePin, uint8_t transmitPin, bool inverse_logic = false) :
-      SoftSerial(receivePin, transmitPin, inverse_logic) {}
-    void setTimeout(unsigned long timeout) {
-      _timeout = timeout;
-    }
-    size_t readBytesUntil( char terminator, char *buffer, size_t length) {
-      size_t index = 0;
-      while (index < length) {
-        int c = timedRead();
-        if (c < 0 || c == terminator) break;
-        *buffer++ = (char)c;
-        index++;
-      }
-      return index; // return number of characters, not including null terminator
-    }
-  // End copy from core Stream.h/.cpp
-};
-*/
-/*
-size_t tinyReadBytesUntil(char terminator, char *buffer, /*size_t*//* uint8_t length, long timeout) {
-  /*size_t*//* uint8_t index = 0;
-  while (index < length) {
-//    int c = timedRead();
-
-    int c;
-    unsigned long _startMillis = millis();
-    do {
-      c = Serial.read();
-      if (c >= 0) break;
-    } while(millis() - _startMillis < timeout);
-//    return -1;     // -1 indicates timeout
-    
-    if (c < 0 || c == terminator) break;
-    *buffer++ = (char)c;
-    index++;
-  }
-  return index; // return number of characters, not including null terminator
-}
-*/
+// #include <SoftSerial.h> // Supplied in IDE, but limited to 57.6k & too big
 const uint8_t serialRxPin = 2; // required by Digispark_SoftSerial-INT0
-//SoftSerialAdd mySerial(2, 0);
-SoftSerial mySerial(2, 0);
+SoftSerial mySerial(serialRxPin, 0); // or TX on pin 1 if LED on 0
 #define Serial mySerial
-const uint8_t textBufferSize = _SS_MAX_RX_BUFF;
+
+const uint8_t textBufferSize = _SS_MAX_RX_BUFF; //TODO +1?
 #define USECVAR 3 // accept +/- 1/(2^3) variation of bit time in uSec
                   // Digispark clock may vary. If marginal, usually at least 1st char received is good. HC-05s seem to receive marginal rates well
-#define LED_BUILTIN 1
+                  // TODO what was ^^^ about?
 
 
-#else // not a Digispark
+
+#else // not ARDUINO_AVR_DIGISPARK
+
+
+
 // assume hardware serial with receive on pin 0
 const uint8_t serialRxPin = 0;
 const uint8_t textBufferSize = SERIAL_RX_BUFFER_SIZE;
 #define USECVAR 4 // accept +/- 1/(2^4) variation of bit time
                   // Expect accurate clock. 5 would likely work.
-#endif
+
+
+#endif // not ARDUINO_AVR_DIGISPARK
+
 
 #include <limits.h>
 
 long bps = 0;
-// #define temp bps // overload bps for memory frugality TODO or not
 int bitTime; // microseconds
 const uint8_t samples = 8; // number of mark/1/high bits to try to measure
                            // any >1 non-extended ASCII chars will have 010 msb-stop-start sequence
@@ -130,27 +89,31 @@ const int patience = 1000; // millis allowance for human reaction
 const uint8_t maxNameLen = 32; // max 32 chars per at least one reference
 
 char textBuffer[textBufferSize];
-int8_t chrPtr;
-#define polarity chrPtr // overload chrPtr;
+int8_t chrPtr; //TODO why not unsigned?
+uint8_t polarity;
+//TODO #define polarity chrPtr // overload chrPtr;
+
+
 
 struct rateParms {
-  long bps; // "standard" bit rate, or fault flag
+  long bps; // "standard" bit rate
   int uSec; // bit duration
-  // could calculate uSec but expect more compact to store than to add division code
-  // TODO storing second uSec for range < code to calc +/- 1/16?
+  // TODO could calculate uSec but expect more compact to store than to add calc code
 };
 
-
 const struct rateParms rateParms[] {
+	
 #ifndef ARDUINO_AVR_DIGISPARK
 // don't let Digispark set a speed it can't reconnect to
   {500000, 2}, // possible with hw serial at 16MHz but not commonly supported by SPP modules
 //{460800, 2}, // commonly supported by SPP modules but not possible with hw serial at 16MHz
   {230400, 4},
 #endif
+
 #if !defined ARDUINO_AVR_DIGISPARK || defined SoftSerialINT0_h
   {115200, 9}, // ok for not-Digispark or Digispark with SoftSerial_INT0 (SS receive not bulletproof - go slower to set a long bt name)
 #endif
+
   {57600, 17},
   {38400, 26},
 //  {28800, 35}, // not used by known SPP modules
@@ -166,6 +129,8 @@ const struct rateParms rateParms[] {
 
 const uint8_t numRates = (sizeof(rateParms) / sizeof(struct rateParms));
 
+///////////////////////////
+
 void discardInput() {
   delay(5); // follow-on bytes can be slow
   while (Serial.available()) {
@@ -177,9 +142,9 @@ void discardInput() {
 boolean yorn() {
   char inChar;
   discardInput();
-  Serial.print(F(" y/n:"));
+  Serial.print(F(" [y/n] "));
   do {
-    while (!Serial.available()); // wait for input
+    while (!Serial.available());
     inChar = Serial.read() & 0b11011111; // fold case
   } while (inChar != 'Y' && inChar != 'N');
   Serial.println(inChar);
@@ -187,12 +152,13 @@ boolean yorn() {
 }
 
 void commandStart() {
-  Serial.println(F("Get ready to press the HC-05 command mode button ..."));
+  Serial.println(F("Get ready to press HC-05 command mode button ..."));
   Serial.println(F("Press when LED lights; release when LED flashes."));
   discardInput();
   Serial.println(F("Ready? [any key]"));
   while (!Serial.available());
   discardInput();
+  Serial.println();
   Serial.println(F("Go..."));
   digitalWrite(LED_BUILTIN, HIGH);
   delay(2000);
@@ -200,32 +166,32 @@ void commandStart() {
 
 void commandStop() {
   Serial.flush();
-  for (uint8_t a=0; a<11; a++) { //five flashes
+  for (uint8_t a=0; a<11; a++) { //five flashes then off (if on at start)
     delay(100);
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
   }
   delay(2000);
 }
 
-size_t tinyReadBytesUntil(char terminator, char *buffer, /*size_t*/ uint8_t length, long timeout) {
-  /*size_t*/ uint8_t index = 0;
+size_t tinyReadBytesUntil(char terminator, char *buffer, size_t length, unsigned long _timeout) {
+  // Because Digispark tiny core has runty Stream class
+  // This is basically readBytesUntil() with timeout as argument & timedRead() inline
+  size_t index = 0;
   while (index < length) {
-//    int c = timedRead();
-
     int c;
     unsigned long _startMillis = millis();
     do {
       c = Serial.read();
       if (c >= 0) break;
-    } while(millis() - _startMillis < timeout);
-//    return -1;     // -1 indicates timeout
-    
+    } while(millis() - _startMillis < _timeout);
     if (c < 0 || c == terminator) break;
     *buffer++ = (char)c;
     index++;
   }
   return index; // return number of characters, not including null terminator
 }
+
+
 void setup()
 {
   // TODO benefit?
