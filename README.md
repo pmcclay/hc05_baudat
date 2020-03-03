@@ -15,10 +15,16 @@ Written for the Arduino "IDE".
 
 ## Connect
 
-### connecting HC-05 to "the usual" UNO-like boards
+[TODO many]() [examples]()
+
+Reset cap is handy to s
+(It might be that someone thinks HC-05 modules tollerate 5V just fine and routinely connects them directly to 5V devices, but I wouldn't know anything about such nonsense. That someone probably punts to resistive dividers in "keeper" builds anyhow.)
+
+
+### "the usual" UNO-like boards
 power; hardware serial w/level shifting; reset cap. [TODO sources]().
 
-(It might be that someone thinks HC-05 modules tollerate 5V just fine and routinely connects them directly to 5V devices, but I wouldn't know anything about such nonsense. That someone probably punts to resistive dividers in "keeper" builds anyhow.)
+
 
 ### connecting to Digispark-like ATtiny85 boards
 
@@ -43,5 +49,5 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTMzMjI4MzcwLC0xMTI4MTM4MDMxXX0=
+eyJoaXN0b3J5IjpbOTQ4NjkyMTksLTExMjgxMzgwMzFdfQ==
 -->
