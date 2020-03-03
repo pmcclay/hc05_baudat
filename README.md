@@ -5,9 +5,9 @@ An OTA config tool for HC-05 or similar Bluetooth SPP modules
 Use *hc05-baudat* to set serial BAUD & issue AT commands -- with a hat tip to Émile Baudot
 
   * UI over Bluetooth connection
-  * immediately indicate serial/UART bit rate/bps
+  * immediately indicate serial/UART baud/bit rate/bps
   * autodetect serial bit rate
-  * compatible with [Digispark](http://digistump.com/products/1) ATtiny85 
+  * compatible with [Digispark](http://digistump.com/products/1) ATtiny85 board & [clones](https://www.aliexpress.com/wholesale?SearchText=digispark)
   * suitable for dedicated device
   * e.g. TODO hw project link
 
@@ -27,5 +27,5 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTM4Mzc4NDkyNCwtMTEyODEzODAzMV19
+eyJoaXN0b3J5IjpbMTE1MjYxODczMywtMTEyODEzODAzMV19
 -->
