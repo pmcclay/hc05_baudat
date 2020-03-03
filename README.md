@@ -24,14 +24,15 @@ Reset cap is handy to start sketch on BT connection.
 
 ### "the usual" UNO-like boards
 hardware serial
-whatever "Serial" connects to
+* whatever "Serial" connects to
+* but bps detection specifically assumes RX on pin 0
 
 
 
 ### connecting to Digispark-like ATtiny85 boards
 
 RX (from HC-05 TX) on pin 2. Because INT0.
-TX (to HC-05 RX) on pin 0.
+TX (to HC-05 RX) on pin 0. LED on 0 might be a reason to use 1.
 TODO [example]()
 
 
@@ -51,6 +52,5 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTEzNjMyNzg2ODYsLTExMjgxMzgwMzFdfQ
-==
+eyJoaXN0b3J5IjpbMTEwNjIxMzE0MCwtMTEyODEzODAzMV19
 -->
