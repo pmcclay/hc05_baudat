@@ -1,7 +1,9 @@
 # hc05-baudat
 
-hc05-baudat is an OTA config tool for HC-05 or similar Bluetooth SPP modules
-Set baud & issue AT commands, with a hat tip to Émile Baudot
+An OTA config tool for HC-05 or similar Bluetooth SPP modules
+
+Use *hc05-baudat* to set serial BAUD & issue AT commands  with a hat tip to Émile Baudot
+
   * UI over Bluetooth connection
   * immediately indicate serial/UART bit rate/bps
   * autodetect serial bit rate
@@ -25,5 +27,5 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTE2OTk5Nzg1Nl19
+eyJoaXN0b3J5IjpbLTEyNjAwMzM1NjRdfQ==
 -->
