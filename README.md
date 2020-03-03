@@ -15,7 +15,9 @@ Written for the Arduino "IDE".
 
 ## Use
 
-### connecting HC-05 to "the usual" UNO-like 
+### connecting HC-05 to "the usual" UNO-like boards
+power; hardware serial w/level shifting; reset cap. [TODO sources]().
+(it might be that 
 
 ## mega tiny
 This sketch compiles for "typical" ATmega boards, like UNO & friends, and for Digispark ATtiny85 boards.
@@ -31,6 +33,5 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTIwMzY0MTQ1NzUsLTExMjgxMzgwMzFdfQ
-==
+eyJoaXN0b3J5IjpbLTEwNjc1NzY1MSwtMTEyODEzODAzMV19
 -->
