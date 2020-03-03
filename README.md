@@ -22,6 +22,9 @@ power; hardware serial w/level shifting; reset cap. [TODO sources]().
 
 ### connecting to Digispark-like ATtiny85 boards
 
+RX (from HC-05 TX) on pin 2. Because INT0.
+TX (to HC-05 RX) on pin 0.
+
 
 ## mega tiny
 This sketch compiles for "typical" ATmega boards, like UNO & friends, and for Digispark ATtiny85 boards.
@@ -37,6 +40,6 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTExNTU2OTAyNjIsLTExMjgxMzgwMzFdfQ
+eyJoaXN0b3J5IjpbLTE3MzQ5NTg4NTQsLTExMjgxMzgwMzFdfQ
 ==
 -->
