@@ -41,7 +41,7 @@ TODO [example]()
 ## mega tiny
 This sketch should compile for "typical" UNO-like ATmega boards, and for Digispark-like ATtiny85 boards.
 
-Cleaning up a 1.0 version in early 2020 was awkward because the [Digistump ATtiny core](https://github.com/digistump/DigistumpArduino) for Arduino was never perfect and has gone unmaintained for a few years while Spence Konde is actively working on [a superior ATtiny core](https://github.com/SpenceKonde/ATTinyCore) that's _almost_ able to handle this without doing much differently than would be for a mega-only version.
+Cleaning up a 1.0 version in early 2020 was awkward because the [Digistump ATtiny core](https://github.com/digistump/DigistumpArduino) for Arduino was never perfect and has gone unmaintained for a few years while Spence Konde is actively working on [a superior ATtiny core](https://github.com/SpenceKonde/ATTinyCore) that's _almost_ able to handle this without coding much differently than would be for a mega-only version.
 
 ### mega
 When compiling for not-Digispark boards this uses hardware serial and assumes RX on pin 0. The code almost uses Serial.readBytes{,Until}() with Serial.setTimeout() but...
@@ -62,6 +62,6 @@ detect &amp; set HC-05 bit rate, name &amp; polarity
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbNDM1NzM0MjIzLDk4OTYxMTM4MCwtMTEyOD
-EzODAzMV19
+eyJoaXN0b3J5IjpbLTgxNDk0MzM3NCw5ODk2MTEzODAsLTExMj
+gxMzgwMzFdfQ==
 -->
