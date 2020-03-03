@@ -19,7 +19,7 @@ Written for the Arduino "IDE".
 
 Reset cap is handy to start sketch on BT connection.
 
-(It might be that someone thinks HC-05 modules tollerate 5V just fine and routinely connects them directly to 5V devices, but I wouldn't know anything about such nonsense. That someone probably punts to resistive dividers in "keeper" builds anyhow.)
+(It might be that someone thinks HC-05 signal pins tolerate 5V just fine and routinely connects them directly to 5V devices, but I wouldn't know anything about such nonsense. That someone probably punts to resistive dividers in "keeper" builds anyhow.)
 
 
 ### "the usual" UNO-like boards
@@ -62,6 +62,6 @@ detect &amp; set HC-05 bit rate, name &amp; polarity
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTgxNDk0MzM3NCw5ODk2MTEzODAsLTExMj
-gxMzgwMzFdfQ==
+eyJoaXN0b3J5IjpbNTcxNDMwMjc1LC04MTQ5NDMzNzQsOTg5Nj
+ExMzgwLC0xMTI4MTM4MDMxXX0=
 -->
