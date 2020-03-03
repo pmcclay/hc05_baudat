@@ -54,9 +54,14 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
+ Bit rate detection evolved from example by retrolefty:
+  https://forum.arduino.cc/index.php?topic=98911.15 posted 30 March 2012
+
+//#ifdef ARDUINO_AVR_ATTINYX5 -- maybe when pulseIn() works better TODO to readme
+
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMjAyNDg4MTkwMSw5ODk2MTEzODAsLTExMj
-gxMzgwMzFdfQ==
+eyJoaXN0b3J5IjpbNDM1NzM0MjIzLDk4OTYxMTM4MCwtMTEyOD
+EzODAzMV19
 -->
