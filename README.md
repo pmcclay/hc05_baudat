@@ -40,6 +40,8 @@ TODO [example]()
 
 ## mega tiny
 This sketch compiles for "typical" ATmega boards, like UNO & friends, and for Digispark ATtiny85 boards.
+
+
 ### mega
 When compiling for not-Digispark boards this uses hardware serial and assumes RX on pin 0. The code almost uses Serial.readBytes{,Until}() with Serial.setTimeout() but...
 ### tiny
@@ -52,5 +54,5 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTEwNjIxMzE0MCwtMTEyODEzODAzMV19
+eyJoaXN0b3J5IjpbLTEwMDU4MjkyOCwtMTEyODEzODAzMV19
 -->
