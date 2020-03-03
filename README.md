@@ -17,12 +17,14 @@ Written for the Arduino "IDE".
 
 [TODO many]() [examples]()
 
-Reset cap is handy to s
+Reset cap is handy to start sketch on BT connection.
+
 (It might be that someone thinks HC-05 modules tollerate 5V just fine and routinely connects them directly to 5V devices, but I wouldn't know anything about such nonsense. That someone probably punts to resistive dividers in "keeper" builds anyhow.)
 
 
 ### "the usual" UNO-like boards
-power; hardware serial w/level shifting; reset cap. [TODO sources]().
+hardware serial
+whatever "Serial" connects to
 
 
 
@@ -49,5 +51,6 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbOTQ4NjkyMTksLTExMjgxMzgwMzFdfQ==
+eyJoaXN0b3J5IjpbLTEzNjMyNzg2ODYsLTExMjgxMzgwMzFdfQ
+==
 -->
