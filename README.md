@@ -13,7 +13,9 @@ Use *hc05-baudat* to set serial BAUD & issue AT commands -- with a hat tip to É
 
 Written for the Arduino "IDE".
 
-# Use
+## Use
+
+### connecting HC-05 to "the usual" UNO-like 
 
 ## mega tiny
 This sketch compiles for "typical" ATmega boards, like UNO & friends, and for Digispark ATtiny85 boards.
@@ -29,6 +31,6 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTEzMDM2NjI0NDgsLTExMjgxMzgwMzFdfQ
+eyJoaXN0b3J5IjpbLTIwMzY0MTQ1NzUsLTExMjgxMzgwMzFdfQ
 ==
 -->
