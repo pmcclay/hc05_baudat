@@ -13,7 +13,7 @@ Use *hc05-baudat* to set serial BAUD & issue AT commands -- with a hat tip to É
 
 Written for the Arduino "IDE".
 
-## Use
+## Connect
 
 ### connecting HC-05 to "the usual" UNO-like boards
 power; hardware serial w/level shifting; reset cap. [TODO sources]().
@@ -24,6 +24,9 @@ power; hardware serial w/level shifting; reset cap. [TODO sources]().
 
 RX (from HC-05 TX) on pin 2. Because INT0.
 TX (to HC-05 RX) on pin 0.
+TODO [example]()
+
+
 
 
 ## mega tiny
@@ -40,6 +43,5 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 detect &amp; set HC-05 bit rate, name &amp; polarity
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTE3MzQ5NTg4NTQsLTExMjgxMzgwMzFdfQ
-==
+eyJoaXN0b3J5IjpbMTMzMjI4MzcwLC0xMTI4MTM4MDMxXX0=
 -->
