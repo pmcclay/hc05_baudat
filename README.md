@@ -60,8 +60,9 @@ detect &amp; set HC-05 bit rate, name &amp; polarity
 //#ifdef ARDUINO_AVR_ATTINYX5 -- maybe when pulseIn() works better TODO to readme
 
 
-
+[https://github.com/micronucleus/micronucleus/blob/master/firmware/configuration/t85_default/bootloaderconfig.h](https://github.com/micronucleus/micronucleus/blob/master/firmware/configuration/t85_default/bootloaderconfig.h)
+OSCCAL_SAVE_CALIB
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbNTcxNDMwMjc1LC04MTQ5NDMzNzQsOTg5Nj
-ExMzgwLC0xMTI4MTM4MDMxXX0=
+eyJoaXN0b3J5IjpbMTEyMzAxNzA2Myw1NzE0MzAyNzUsLTgxND
+k0MzM3NCw5ODk2MTEzODAsLTExMjgxMzgwMzFdfQ==
 -->
