@@ -1,8 +1,8 @@
-# hc05-baudat
+# hc05_baudat
 
 An OTA config tool for HC-05 or similar Bluetooth SPP modules
 
-Use *hc05-baudat* to set serial BAUD & issue AT commands -- with a hat tip to Émile Baudot
+Use *hc05_baudat* to set serial BAUD & issue AT commands -- with a hat tip to Émile Baudot
 
   * UI over Bluetooth connection
   * immediately indicate serial/UART baud/bit-rate/bps
@@ -63,6 +63,7 @@ detect &amp; set HC-05 bit rate, name &amp; polarity
 [https://github.com/micronucleus/micronucleus/blob/master/firmware/configuration/t85_default/bootloaderconfig.h](https://github.com/micronucleus/micronucleus/blob/master/firmware/configuration/t85_default/bootloaderconfig.h)
 OSCCAL_SAVE_CALIB
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTEyMzAxNzA2Myw1NzE0MzAyNzUsLTgxND
-k0MzM3NCw5ODk2MTEzODAsLTExMjgxMzgwMzFdfQ==
+eyJoaXN0b3J5IjpbMjYyOTAyOTUxLDExMjMwMTcwNjMsNTcxND
+MwMjc1LC04MTQ5NDMzNzQsOTg5NjExMzgwLC0xMTI4MTM4MDMx
+XX0=
 -->
