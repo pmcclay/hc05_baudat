@@ -6,12 +6,114 @@ Use *hc05_baudat* to set serial BAUD & issue AT commands -- with a hat tip to É
 
   * UI over Bluetooth connection
   * immediately indicate serial/UART baud/bit-rate/bps
-  * autodetect serial bit rate
+  * autodetect current serial bit rate
+  * prompts for commonly configured parameters
+    **or**
+    arbitrary AT commands
   * compatible with [Digispark](http://digistump.com/products/1) ATtiny85 board & [clones](https://www.aliexpress.com/wholesale?SearchText=digispark)
   * suitable for dedicated device
   * e.g. TODO hw project link
 
 Written for the Arduino "IDE".
+
+This README will often use _baudat_ in place of _hc05_baudat_. The only collision I found in early 2020 was [Baudat GmbH & Co. KG](https://www.baudat.de) who sell badass cable cutters. This should confuse no one.
+
+## Usage
+
+Upload sketch and connect an HC-05 to serial pins.
+
+Connect to HC-05 with a [Bluetooth terminal app](https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal).
+
+*baudat* first displays a banner at all supported bit rates. The one that is readable among other noise tells the currently configured bit rate of the SPP module. If that's all you wanted to know then you're done.
+```
+##noise##noise##noise##
+
+This is 57600 bps. Type something. 'U'is robust.
+
+##noise##noise##noise##
+```
+Now you know the SPP module's configured bit rate but *baudat* does not yet know what you know. To continue, type something so *baudat* can see how fast the SPP module sends serial data. Whatever you smash on the keyboard will probably work. 'U' is robust because it looks like `0101010101` on the wire. Any sequence of more than one "ordinary" (7 bit) characters sent together (e.g. "line mode" vs "character mode") will probably work because there will probably be a single stop bit between characters `0xxxxxxx010xxxxxxx010xxxxxxx01`. *baudat* will match the bit rate of the SPP module and continue.
+
+```
+Hello at 57600 bps
+
+baudat HC-05 configuration tool
+
+Set name|polar|bps? [y/n]
+```
+
+Answer `y`/`Y` to begin guided configuration of commonly configured parameters, or `n`/`N`  to send arbitrary AT commands to the HC-05.
+
+The "common" parameters include:
+* Bluetooth device name
+* BT connection state signal polarity (when used as a RESET signal)
+* serial speed in bits per second (baud)
+
+Prompts and responses for guided configuration should be fairly self-explanatory:
+
+```
+Set name|polar|bps? [y/n] Y
+
+Update Bluetooth device name? [y/n] Y
+
+New name: My_New_BT_Widget
+
+Update connection status polarity? [y/n] Y
+
+When connected, set status signal LOW or HIGH? 0/1: 0
+
+Select new serial speed
+a: 115200
+b: 57600
+...
+f: 4800
+g: 2400
+```
+_baudat_ will repeat the new values to configure, advise when to press & release the command mode button and wait until you're ready:
+```
+New parameters
+Name: My_New_BT_Widget
+Connected state signal: 0
+speed 115200
+
+Get ready to press HC-05 command mode button...
+Press when LED lights; release when LED flashes.
+Ready? [any key]
+```
+While watching the LED -- on the controller board, not the HC-05 -- send anything when ready to press & release the command button as indicated.
+
+While you're holding the command button, _baudat_ will command the HC-05 as specified. You should **not** see any of the following commands:
+
+```
+AT+NAME=My_New_BT_Widget
+AT+POLAR=1,0
+AT+UART=115200,0,0
+```
+_baudat_ will then repeat forever: `power cycle/reset HC-05`
+A new speed will not take effect until the HC-05 is reset.
+After changing the BT name, you'll have to pair with the new name to reconnect.
+
+To send arbitrary `AT` commands, answer `n`/`N`  to the first prompt. _baudat_ will then loop:
+* prompt for a command, with `AT` prefix assumed
+* prompt for command mode button press/release
+* display result
+```
+Set name|polar|bps? [y/n] N
+
+Enter command: AT+version
+
+Get ready to press HC-05 command mode button...
+Press when LED lights; release when LED flashes.
+Ready? [any key]
+
+Go...
+
+Result:
++VERSION:hc01.comV2.1
+OK
+
+Enter command: AT 
+```
 
 ## Connect
 
@@ -63,7 +165,5 @@ detect &amp; set HC-05 bit rate, name &amp; polarity
 [https://github.com/micronucleus/micronucleus/blob/master/firmware/configuration/t85_default/bootloaderconfig.h](https://github.com/micronucleus/micronucleus/blob/master/firmware/configuration/t85_default/bootloaderconfig.h)
 OSCCAL_SAVE_CALIB
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTI2ODE3OTE0MiwyNjI5MDI5NTEsMTEyMz
-AxNzA2Myw1NzE0MzAyNzUsLTgxNDk0MzM3NCw5ODk2MTEzODAs
-LTExMjgxMzgwMzFdfQ==
+eyJoaXN0b3J5IjpbLTEzODA5NzIzNzldfQ==
 -->
