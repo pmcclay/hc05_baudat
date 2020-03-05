@@ -1,26 +1,21 @@
-//#define DEBUG
-#define DEBUGBPS 38400
-#define DEBUG2k
-
 /*
-  baudat -- an OTA config tool for HC-05 or similar Bluetooth SPP modules
+  hc05-baudat -- an OTA config tool for HC-05 or similar Bluetooth SPP modules
+  Set baud & issue AT commands, with a hat tip to Émile Baudot
   * UI over Bluetooth connection
   * immediately indicate serial/UART bit rate/bps
   * autodetect serial bit rate
   * compatible with Digispark (ATtiny85)
   * suitable for dedicated device
   * e.g. TODO hw project link
-  Copyright 2019 Paul McClay <mcclay at g mail>
-  MIT License https://opensource.org/licenses/MIT
 
   Setup:
-    Send banner at all rates -- legible banner indicates configured bps
+    Send banner at all rates -- legible banner indicates current rate
     Detect serial bit rate
     Begin Serial stream at detected rate
     Ask: guided prompts for new name/polarity/rate?
       Prompt for new info
       Prompt user to switch HC-05 to command mode
-      Configure HC-05 -- new bit rate not effective until restart
+      Configure HC-05 -- new bit rate effective after module reset
       loop forever: at old bit rate prompt to reset HC-05
 
   Loop:   // reached only if user declines guided config
@@ -30,21 +25,21 @@
     Read/Store response from HC-05
     Prompt user to release HC-05 command mode
     Display stored HC-05 response
-  
-  Bit rate detection started with example by retrolefty:
-  https://forum.arduino.cc/index.php?topic=98911.15 posted 30 March 2012
-  and has evolved to mostly different.
- */
 
+  Readme at github TODO
 
-#ifdef ARDUINO_AVR_DIGISPARK // Runs on Digispark ATtiny85. (Generalize to other ATtiny?)
+  Copyright 2019 Paul McClay <mcclay at g mail>
+  MIT License & disclaimer https://opensource.org/licenses/MIT
+*/
 
-// TODO hw project URL
+//#define BITTIMER // uncomment to loop reporting detected bit times & rates
+#define BITTIMERBPS 57600
 
-// Early Digispark bootloaders may calibrate clock only when connected to a real USB host.
+#ifdef ARDUINO_AVR_DIGISPARK // Runs on Digispark ATtiny85
+
+// The bootloaders on early/real Digispark boards may calibrate clock only when connected to a real USB host.
 // See https://digistump.com/wiki/digispark/tricks "Detect if system clock was calibrated".
-
-//#ifdef ARDUINO_AVR_ATTINYX5 -- maybe when pulseIn() works better
+// The "aggressive" micronucleus bootloader does not calibrate the clock.
 
 #define LED_BUILTIN 1 // early units may have LED on pin 0
 
@@ -85,33 +80,29 @@ const uint8_t samples = 8; // number of mark/1/high bits to try to measure
                            // any >1 non-extended ASCII chars will have 010 msb-stop-start sequence
                            // assuming no parity & stop bit is one bit time
                            // send 0x0000 to time stop bit
-const int patience = 1000; // millis allowance for human reaction
+const int patience = 1000; // millis allowance for human reaction TODO tie more delays to this
 const uint8_t maxNameLen = 32; // max 32 chars per at least one reference
 
 char textBuffer[textBufferSize];
 int8_t chrPtr; //TODO why not unsigned?
 uint8_t polarity;
-//TODO #define polarity chrPtr // overload chrPtr;
-
 
 
 struct rateParms {
   long bps; // "standard" bit rate
-  int uSec; // bit duration
-  // TODO could calculate uSec but expect more compact to store than to add calc code
+  int uSec; // bit duration TODO compare code size to calculate from bps
 };
 
 const struct rateParms rateParms[] {
 	
-#ifndef ARDUINO_AVR_DIGISPARK
-// don't let Digispark set a speed it can't reconnect to
+#ifndef ARDUINO_AVR_DIGISPARK // don't let Digispark set a speed it can't reconnect to
   {500000, 2}, // possible with hw serial at 16MHz but not commonly supported by SPP modules
 //{460800, 2}, // commonly supported by SPP modules but not possible with hw serial at 16MHz
   {230400, 4},
 #endif
 
 #if !defined ARDUINO_AVR_DIGISPARK || defined SoftSerialINT0_h
-  {115200, 9}, // ok for not-Digispark or Digispark with SoftSerial_INT0 (SS receive not bulletproof - go slower to set a long bt name)
+  {115200, 9}, // ok for not-Digispark or Digispark with SoftSerial_INT0 (SS_INT0 receive not bulletproof - go slower to set a long bt name)
 #endif
 
   {57600, 17},
@@ -122,9 +113,6 @@ const struct rateParms rateParms[] {
   {9600, 104},
   {4800, 208},
   {2400, 417}
-#ifdef DEBUG2k
-, {2000, 500} 
-#endif
 };
 
 const uint8_t numRates = (sizeof(rateParms) / sizeof(struct rateParms));
@@ -205,12 +193,12 @@ void setup()
   for (uint8_t a = 0; a < numRates; a++)
   {
     Serial.begin(rateParms[a].bps);
-    Serial.println();
-    Serial.println();
+    Serial.println(); // new line after preceding noise
+    Serial.println(); // blank line
     Serial.print(F("This is "));
     Serial.print(rateParms[a].bps, DEC);
     Serial.println(F(" bps. Type something. 'U' is robust.")); //'U' = x10101010101x (8N)
-    Serial.println();
+    Serial.println(); // blank line before follwing noise
     Serial.end();
     delay(2); // seems to help the next slower rate start esp. for slowest rates TODO really?
   }
@@ -220,12 +208,14 @@ void setup()
    * loop
    * * loop
    * * * pulsein() to measure shortest of several line state periods
-   * * compare with expected bitTimes +/- 1/16
+   * * compare with expected bitTimes +/- fraction
    * until a measured bit period matches
    */
-#ifdef DEBUG
-do {
-  bps=0;
+#ifdef BITTIMER // just loop reporting detecting times/rates
+  Serial.begin(BITTIMERBPS);
+  Serial.println();
+  do {
+    bps=0;
 #endif
 
   do {
@@ -248,23 +238,20 @@ do {
     if (a < numRates && bitTime >= rateParms[a].uSec - (rateParms[a].uSec >> USECVAR))
       bps = rateParms[a].bps;
 
-#ifdef DEBUG
+#ifdef BITTIMER
     if (bitTime != rateParms[numRates - 1].uSec * 2) {
-      Serial.begin(DEBUGBPS);
-      Serial.println();
       Serial.print(F("bitTime "));
       Serial.println(bitTime, DEC);
       Serial.print(F("bps "));
       Serial.println(bps, DEC);
-      Serial.end();
-      delay(250);
+      delay(500);
     }
 #endif
 
   } while (!bps); // i.e. until bit rate found within range
 
-#ifdef DEBUG
-} while (true);
+#ifdef BITTIMER
+} while (true); // BITTIMER never exits this loop
 #endif
 
 
@@ -274,13 +261,14 @@ do {
   Serial.print(F("Hello at "));
   Serial.print(bps, DEC);
   Serial.println(F(" bps"));
-  Serial.print(F("Measured bit duration: "));
-  Serial.print(bitTime);
-  Serial.println(F(" uSec"));
+// TODO kill?
+//  Serial.print(F("Measured bit duration: "));
+//  Serial.print(bitTime);
+//  Serial.println(F(" uSec"));
   
 
   Serial.println();
-  Serial.println(F("baudat HC-05 configutron"));
+  Serial.println(F("baudat HC-05 configutron tool"));
   Serial.println();
 
   Serial.print(F("Set name|polar|bps?"));
@@ -401,23 +389,24 @@ textBuffer[tinyReadBytesUntil('\r', textBuffer, maxNameLen, 60000)] = '\0';
 
 void loop()
 {
+#if !defined ARDUINO_AVR_DIGISPARK || defined SoftSerialINT0_h
   Serial.print(F("Enter command: AT"));
   discardInput();
-//  Serial.setTimeout(LONG_MAX);
-//  textBuffer[Serial.readBytesUntil('\r', textBuffer, textBufferSize-1)] = '\0';
-textBuffer[tinyReadBytesUntil('\r', textBuffer, textBufferSize-1, LONG_MAX)] = '\0';
+  textBuffer[tinyReadBytesUntil('\r', textBuffer, textBufferSize-1, ULONG_MAX)] = '\0'; // wait for text up to CR and add null terminator to make a string
   Serial.println(textBuffer);
   commandStart();
   discardInput();
   Serial.print(F("AT"));
   Serial.println(textBuffer);
   Serial.flush();
-//  Serial.setTimeout(1000);
-//  textBuffer[Serial.readBytesUntil('\0', textBuffer, textBufferSize-1)] = '\0'; // not expecting \0; using readBytesUntil to avoid adding readBytes to code size
-textBuffer[tinyReadBytesUntil('\0', textBuffer, textBufferSize-1, 1000)] = '\0';
+  textBuffer[tinyReadBytesUntil('\0', textBuffer, textBufferSize-1, 1000)] = '\0'; // not expecting \0; reusing rBUntil w/short timeout
   commandStop();
   Serial.println(F("Result:"));
   Serial.println(textBuffer);
   Serial.println();
+#else // assuming Digispark with default SoftSerial library
+  Serial.println("Requires SoftSerial-INT0 library"); // smaller lib leaves more space for code
+  while (true){};
+#endif
   
 }
