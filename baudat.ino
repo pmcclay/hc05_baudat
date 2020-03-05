@@ -161,24 +161,25 @@ void commandStop() {
   delay(2000);
 }
 
-size_t tinyReadBytesUntil(char terminator, char *buffer, size_t length, unsigned long _timeout) {
-  // Because Digispark tiny core has runty Stream class
-  // This is basically readBytesUntil() with timeout as argument & timedRead() inline
-  size_t index = 0;
+uint8_t readText(char *buffer, uint8_t length, unsigned long timeout) {
+  // - read printable text up to next control character or timeout
+  // - returns # characters read
+  // - blunt solution for CR vs LF vs CRLF
+  // - "printable" is loosely defined as ASCII values >= 32 (space)
+  //   which should be good up to 126 then gets questionable
+  // - single byte index assumes buffer <= 255 bytes (256 == 0)
+  unsigned long startMillis = millis();
+  uint8_t index = 0;
+  int c;
   while (index < length) {
-    int c;
-    unsigned long _startMillis = millis();
     do {
       c = Serial.read();
-      if (c >= 0) break;
-    } while(millis() - _startMillis < _timeout);
-    if (c < 0 || c == terminator) break;
-    *buffer++ = (char)c;
-    index++;
+    } while ((c == -1) && (millis() - startMillis < timeout));
+    if (c < 32) break; // control character or timeout
+    buffer[index++] = (char)c;
   }
-  return index; // return number of characters, not including null terminator
+  return(index);
 }
-
 
 void setup()
 {
@@ -280,26 +281,7 @@ void setup()
       Serial.println();
       discardInput();
       Serial.print(F("New name: "));
-
-/*
-      // There's got to be a better way to read a string with length variable up to a limit...
-      chrPtr = -1; // before first because will first increment
-      do {
-        chrPtr++;
-        while (!Serial.available()); // may be getting characters slowly as typed
-        textBuffer[chrPtr] = Serial.read();
-        if (textBuffer[chrPtr] == '\r' || textBuffer[chrPtr] == '\n')
-          textBuffer[chrPtr] = '\0';
-        else if (chrPtr == maxNameLen - 1)
-          textBuffer[++chrPtr] = '\0'; // terminate automagically at maximum length
-// TODO        else
-//          Serial.write(textBuffer[chrPtr]);
-      } while (textBuffer[chrPtr] != '\0'); // i.e. until terminated
-*/
-
-//      Serial.setTimeout(60000);
-//      textBuffer[Serial.readBytesUntil('\r', textBuffer, maxNameLen)] = '\0';
-textBuffer[tinyReadBytesUntil('\r', textBuffer, maxNameLen, 60000)] = '\0';
+      textBuffer[readText(textBuffer, maxNameLen, ULONG_MAX)] = '\0';
       Serial.println(textBuffer);
     } else textBuffer[0] = '\0'; // null name = no change
   
@@ -392,14 +374,16 @@ void loop()
 #if !defined ARDUINO_AVR_DIGISPARK || defined SoftSerialINT0_h
   Serial.print(F("Enter command: AT"));
   discardInput();
-  textBuffer[tinyReadBytesUntil('\r', textBuffer, textBufferSize-1, ULONG_MAX)] = '\0'; // wait for text up to CR and add null terminator to make a string
+//  textBuffer[tinyReadBytesUntil('\r', textBuffer, textBufferSize-1, ULONG_MAX)] = '\0'; // wait for text up to CR and add null terminator to make a string
+  textBuffer[readText(textBuffer, textBufferSize-1, ULONG_MAX)] = '\0'; // read up to CR or LF and add null terminator to make a string
   Serial.println(textBuffer);
   commandStart();
   discardInput();
   Serial.print(F("AT"));
   Serial.println(textBuffer);
   Serial.flush();
-  textBuffer[tinyReadBytesUntil('\0', textBuffer, textBufferSize-1, 1000)] = '\0'; // not expecting \0; reusing rBUntil w/short timeout
+//  textBuffer[tinyReadBytesUntil('\0', textBuffer, textBufferSize-1, 1000)] = '\0'; // not expecting \0; reusing rBUntil w/short timeout
+  textBuffer[readText(textBuffer, textBufferSize-1, 1000)] = '\0'; // read for in ~1 second and add null terminator to make a string
   commandStop();
   Serial.println(F("Result:"));
   Serial.println(textBuffer);
