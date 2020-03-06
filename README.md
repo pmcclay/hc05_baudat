@@ -162,9 +162,13 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
   https://forum.arduino.cc/index.php?topic=98911.15 posted 30 March 2012
 
 //#ifdef ARDUINO_AVR_ATTINYX5 -- maybe when pulseIn() works better TODO to readme
+current pulseIn accurate, but SS0 115.2 breaks but SoftwareSerial (not SoftSerial) works 115.2
+vs. Digispark ~5% fast (525/526uSec for 500) but works including SS0 115.2
 
+TODO SS0 has set[RT]X in constructor.
+someone sed moved to begin in dist lib?
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTg2OTQ3OTAxNl19
+eyJoaXN0b3J5IjpbMTc3MjQyNTAzOF19
 -->
