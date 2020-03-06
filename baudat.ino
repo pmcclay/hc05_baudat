@@ -46,16 +46,15 @@
 // Use Digispark_SoftSerial-INT0 library
 // https://github.com/J-Rios/Digispark_SoftSerial-INT0/archive/master.zip
 #include <SoftSerial_INT0.h> // This one goes to 11 (11.52 myriabits/sec) and saves ~240 bytes
-// #include <SoftSerial.h> // Supplied in IDE, but limited to 57.6k & too big
 const uint8_t serialRxPin = 2; // required by Digispark_SoftSerial-INT0
 SoftSerial mySerial(serialRxPin, 0); // or TX on pin 1 if LED on 0
 #define Serial mySerial
 
-const uint8_t textBufferSize = _SS_MAX_RX_BUFF; //TODO +1?
-#define USECVAR 3 // accept +/- 1/(2^3) variation of bit time in uSec
-                  // Digispark clock may vary. If marginal, usually at least 1st char received is good. HC-05s seem to receive marginal rates well
-                  // TODO what was ^^^ about?
-
+const uint8_t textBufferSize = _SS_MAX_RX_BUFF;
+#define USECVAR 3 // accept +/- 12.5% (1/(2^3)) variation of bit time in uSec
+                  // Digispark clock may vary. In some cases HC-05 can receive what Ds sends
+                  //   but Ds receives only 1st char from HC-05. That's enough to dial down bps.
+                  // TODO better name
 
 
 #else // not ARDUINO_AVR_DIGISPARK
@@ -65,8 +64,8 @@ const uint8_t textBufferSize = _SS_MAX_RX_BUFF; //TODO +1?
 // assume hardware serial with receive on pin 0
 const uint8_t serialRxPin = 0;
 const uint8_t textBufferSize = SERIAL_RX_BUFFER_SIZE;
-#define USECVAR 4 // accept +/- 1/(2^4) variation of bit time
-                  // Expect accurate clock. 5 would likely work.
+#define USECVAR 4 // accept +/- 6.35% (1/(2^4)) variation of bit time
+                  // Expect accurate clock. 5 (+/-3%) would likely work.
 
 
 #endif // not ARDUINO_AVR_DIGISPARK
@@ -80,11 +79,9 @@ const uint8_t samples = 8; // number of mark/1/high bits to try to measure
                            // any >1 non-extended ASCII chars will have 010 msb-stop-start sequence
                            // assuming no parity & stop bit is one bit time
                            // send 0x0000 to time stop bit
-const int patience = 1000; // millis allowance for human reaction TODO tie more delays to this
 const uint8_t maxNameLen = 32; // max 32 chars per at least one reference
 
-char textBuffer[textBufferSize];
-int8_t chrPtr; //TODO why not unsigned?
+char textBuffer[textBufferSize+1]; // +1 for a null beyond end of full buffer
 uint8_t polarity;
 
 
@@ -95,15 +92,15 @@ struct rateParms {
 
 const struct rateParms rateParms[] {
 	
-#ifndef ARDUINO_AVR_DIGISPARK // don't let Digispark set a speed it can't reconnect to
+  #ifndef ARDUINO_AVR_DIGISPARK // don't let Digispark set a speed it can't reconnect to
   {500000, 2}, // possible with hw serial at 16MHz but not commonly supported by SPP modules
 //{460800, 2}, // commonly supported by SPP modules but not possible with hw serial at 16MHz
   {230400, 4},
-#endif
+  #endif
 
-#if !defined ARDUINO_AVR_DIGISPARK || defined SoftSerialINT0_h
+  #if !defined ARDUINO_AVR_DIGISPARK || defined SoftSerialINT0_h
   {115200, 9}, // ok for not-Digispark or Digispark with SoftSerial_INT0 (SS_INT0 receive not bulletproof - go slower to set a long bt name)
-#endif
+  #endif
 
   {57600, 17},
   {38400, 26},
@@ -146,10 +143,9 @@ void commandStart() {
   Serial.println(F("Ready? [any key]"));
   while (!Serial.available());
   discardInput();
-  Serial.println();
-  Serial.println(F("Go..."));
+  Serial.println(F("\nGo..."));
   digitalWrite(LED_BUILTIN, HIGH);
-  delay(2000);
+  delay(1500);
 }
 
 void commandStop() {
@@ -158,7 +154,7 @@ void commandStop() {
     delay(100);
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
   }
-  delay(2000);
+  delay(500);
 }
 
 uint8_t readText(char *buffer, uint8_t length, unsigned long timeout) {
@@ -181,29 +177,28 @@ uint8_t readText(char *buffer, uint8_t length, unsigned long timeout) {
   return(index);
 }
 
+// Yes, this setup() is loaded. Most of this sketch is run-once linear/procedural work.
+// The part that might loop productively is in loop().
 void setup()
 {
   // TODO benefit?
-  pinMode(serialRxPin, INPUT);      // make sure serial in is a input pin
-  digitalWrite (serialRxPin, HIGH); // pull up enabled just for noise protection
+  //pinMode(serialRxPin, INPUT);      // make sure serial in is a input pin
+  //digitalWrite (serialRxPin, HIGH); // pull up enabled just for noise protection
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite (LED_BUILTIN, LOW);
   
-  // blast at all rates - should display one recognizable number amidst noise
-  // TODO rateIdx?
+  // blast banner at all rates - should display one recognizable number amidst noise
+  // and flash LED a bit to show sketch startup
   for (uint8_t a = 0; a < numRates; a++)
   {
+    digitalWrite (LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
     Serial.begin(rateParms[a].bps);
-    Serial.println(); // new line after preceding noise
-    Serial.println(); // blank line
-    Serial.print(F("This is "));
+    Serial.print(F("\n\nThis is "));
     Serial.print(rateParms[a].bps, DEC);
-    Serial.println(F(" bps. Type something. 'U' is robust.")); //'U' = x10101010101x (8N)
-    Serial.println(); // blank line before follwing noise
+    Serial.println(F(" bps. Type something. 'U' is robust.\n")); //'U' = x10101010101x (8N)
     Serial.end();
-    delay(2); // seems to help the next slower rate start esp. for slowest rates TODO really?
+    delay(2); // extend stop condition before continue at slower rate
   }
-
+  digitalWrite (LED_BUILTIN, LOW);
   /*
    * Detect bit rate
    * loop
@@ -212,24 +207,24 @@ void setup()
    * * compare with expected bitTimes +/- fraction
    * until a measured bit period matches
    */
-#ifdef BITTIMER // just loop reporting detecting times/rates
+  #ifdef BITTIMER // just loop reporting detecting times/rates
   Serial.begin(BITTIMERBPS);
-  Serial.println();
+  Serial.println(F("\nBit Timer\n"));
   do {
     bps=0;
-#endif
+  #endif
 
   do {
     bitTime = rateParms[numRates - 1].uSec * 2; // longer than any accepted bit duration
     for (uint8_t a = 0; a < samples; a++)
     {
-#ifndef ARDUINO_AVR_DIGISPARK
+      #ifndef ARDUINO_AVR_DIGISPARK
       cli(); // yes, disable interrupts. since ~2015.
-#endif       // but Digispark core uses old style pulseIn()
+      #endif   // but Digispark core uses ye olde style pulseIn()
       long temp = pulseIn(serialRxPin, HIGH, bitTime);  // measure the next mark bit width - up to shortest already recorded
-#ifndef ARDUINO_AVR_DIGISPARK
+      #ifndef ARDUINO_AVR_DIGISPARK
       sei();
-#endif
+      #endif
       if (temp)
         bitTime = temp; // only decrease - timeout limits detections to no longer than shortest so far
     }
@@ -239,7 +234,7 @@ void setup()
     if (a < numRates && bitTime >= rateParms[a].uSec - (rateParms[a].uSec >> USECVAR))
       bps = rateParms[a].bps;
 
-#ifdef BITTIMER
+    #ifdef BITTIMER
     if (bitTime != rateParms[numRates - 1].uSec * 2) {
       Serial.print(F("bitTime "));
       Serial.println(bitTime, DEC);
@@ -247,98 +242,83 @@ void setup()
       Serial.println(bps, DEC);
       delay(500);
     }
-#endif
+    #endif
 
   } while (!bps); // i.e. until bit rate found within range
 
-#ifdef BITTIMER
-} while (true); // BITTIMER never exits this loop
-#endif
+  #ifdef BITTIMER
+  } while (true); // BITTIMER never exits this loop
+  #endif
 
 
   Serial.begin(bps);
-  Serial.println();
-  Serial.println();
-  Serial.print(F("Hello at "));
+  Serial.print(F("\n\nHello at "));
   Serial.print(bps, DEC);
   Serial.println(F(" bps"));
-// TODO kill?
-//  Serial.print(F("Measured bit duration: "));
-//  Serial.print(bitTime);
-//  Serial.println(F(" uSec"));
-  
+  Serial.println(F("\nbaudat HC-05 configutron tool\n"));
 
-  Serial.println();
-  Serial.println(F("baudat HC-05 configutron tool"));
-  Serial.println();
 
-  Serial.print(F("Set name|polar|bps?"));
+  Serial.print(F("Set basic connectivity parameters?"));
   if (yorn()) {
   
-
-    Serial.print(F("Update Bluetooth device name?"));
+    Serial.print(F("\nSet Bluetooth device name?"));
     if (yorn()) {
-      Serial.println();
       discardInput();
-      Serial.print(F("New name: "));
+      Serial.print(F("\nNew name: "));
       textBuffer[readText(textBuffer, maxNameLen, ULONG_MAX)] = '\0';
       Serial.println(textBuffer);
     } else textBuffer[0] = '\0'; // null name = no change
   
-    Serial.println();
-    
-    Serial.print(F("Update connection status polarity?"));
+
+    Serial.print(F("\nSet BT connection status polarity?"));
     if (yorn()) {
-      Serial.println();
-      Serial.print(F("When connected, set status signal LOW or HIGH? 0/1:"));
+      Serial.print(F("\nWhen connected, set STATE pin LOW(0) or HIGH(1)? [0/1] "));
       do {
         while (!Serial.available()); // wait for input
         polarity = Serial.read();
       } while (polarity != '0' && polarity != '1'); // i.e. until recognized input
-      Serial.write((char) polarity);
+      Serial.println((char) polarity);
     } else
       polarity = '\0'; // nul = no change
   
-    Serial.println();
 
-    Serial.println(F("Select new serial speed"));
+    Serial.println(F("\nSupported serial baud rates:"));
     for (uint8_t a = 0; a < numRates; a++) {
       Serial.print((char) (a + 'a'));
       Serial.print(F(": "));
       Serial.println(rateParms[a].bps);
     }
+    Serial.print(F("Select new speed: [a-"));
+    Serial.print((char) (numRates-1 + 'a'));
+    Serial.print(F("] "));   
     bps = 0; // re-use
     do {
       while (!Serial.available()); // wait for input
       uint8_t speed = (Serial.read() - 'A') & 0b11011111; // fold case
-      if (speed >= 0 && speed < numRates)
+      if (speed >= 0 && speed < numRates) {
         bps = rateParms[speed].bps;
+        Serial.println((char) (speed + 'a'));
+      }
     } while (bps == 0);
-  
-    Serial.println();
-    Serial.println(F("New parameters"));
+    
+
+
+    Serial.println(F("\n==== New parameters ===="));
     if (textBuffer[0]) {
       Serial.print(F("Name: "));
       Serial.println(textBuffer);
     }
     if (polarity) {
-      Serial.print(F("Connected state signal: "));
+      Serial.print(F("Connected signal level: "));
       Serial.println((char) polarity);
     }
-    Serial.print(F("speed "));
+    Serial.print(F("Baud:  "));
     Serial.println(bps, DEC);
     Serial.println();
 
-/*    Serial.println(F("Get ready to press the HC-05 command mode button for ~5 seconds..."));
-    discardInput();
-    Serial.println(F("ready?"));
-    while (!Serial.available());
-    discardInput();
-    Serial.println(F("go..."));
-    delay(2000);
-*/
 
     commandStart();
+
     
     if (textBuffer[0]) {
       Serial.print(F("AT+NAME="));
@@ -355,9 +335,11 @@ void setup()
     Serial.print(F("AT+UART="));
     Serial.print(bps);
     Serial.println(F(",0,0"));
+    delay(100);
 
     commandStop();
-    
+
+
     while(true) {
       delay(1000);
       Serial.println(F("power cycle/reset HC-05"));
@@ -371,26 +353,24 @@ void setup()
 
 void loop()
 {
-#if !defined ARDUINO_AVR_DIGISPARK || defined SoftSerialINT0_h
-  Serial.print(F("Enter command: AT"));
+
+  Serial.print(F("\nEnter command: AT"));
   discardInput();
-//  textBuffer[tinyReadBytesUntil('\r', textBuffer, textBufferSize-1, ULONG_MAX)] = '\0'; // wait for text up to CR and add null terminator to make a string
   textBuffer[readText(textBuffer, textBufferSize-1, ULONG_MAX)] = '\0'; // read up to CR or LF and add null terminator to make a string
   Serial.println(textBuffer);
+  Serial.println();
+  
   commandStart();
+
   discardInput();
   Serial.print(F("AT"));
   Serial.println(textBuffer);
   Serial.flush();
-//  textBuffer[tinyReadBytesUntil('\0', textBuffer, textBufferSize-1, 1000)] = '\0'; // not expecting \0; reusing rBUntil w/short timeout
   textBuffer[readText(textBuffer, textBufferSize-1, 1000)] = '\0'; // read for in ~1 second and add null terminator to make a string
+
   commandStop();
-  Serial.println(F("Result:"));
+
+  Serial.println(F("\nResult:"));
   Serial.println(textBuffer);
-  Serial.println();
-#else // assuming Digispark with default SoftSerial library
-  Serial.println("Requires SoftSerial-INT0 library"); // smaller lib leaves more space for code
-  while (true){};
-#endif
   
 }
