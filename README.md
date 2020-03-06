@@ -41,7 +41,7 @@ Hello at 57600 bps
 
 baudat HC-05 configuration tool
 
-TODO Set name|polar|bps? [y/n]
+Set basic connectivity parameters? [y/n]
 ```
 
 Answer `y`/`Y` to begin guided configuration of commonly configured parameters, or `n`/`N`  to send arbitrary AT commands to the HC-05.
@@ -54,29 +54,30 @@ The "commonly configured parameters" include:
 _baudat_'s prompts and responses for guided configuration should be fairly self-explanatory:
 
 ```
-TODO Set name|polar|bps? [y/n] Y
-TODO
-Update Bluetooth device name? [y/n] Y
+Set basic connectivity parameters? [y/n] Y
+
+Set Bluetooth device name? [y/n] Y
 
 New name: My_New_BT_Widget
 
-Update connection status polarity? [y/n] Y
+Set BT connection status polarity? [y/n] Y
 
-TODO When connected, set status signal LOW or HIGH? 0/1: 0
+When connected, set STATE pin LOW(0) or HIGH(1)? [0/1] 0
 
-TODO Select new serial speed
+Supported serial baud rates:
 a: 115200
 b: 57600
 ...
 f: 4800
 g: 2400
+Select new speed: [a-g] a
 ```
 _baudat_ will repeat the new values to configure, advise when to press & release the command mode button and wait until you're ready:
 ```
-TODO New parameters
+==== New parameters ====
 Name: My_New_BT_Widget
-Connected state signal: 0
-TODO speed 115200
+Connected signal level: 0
+Baud:  115200
 
 Get ready to press HC-05 command mode button...
 Press when LED lights; release when LED flashes.
@@ -94,16 +95,15 @@ AT+UART=115200,0,0
 _baudat_ will then repeat forever:
 `power cycle/reset HC-05`
 
-A new speed will not take effect until the HC-05 is reset.
-After changing the BT name, you'll have to pair with the new name to reconnect. If you have wired the STATE signal to RESET the controller, then reconnecting will restart _baudat_ to detect the new rate.
+A new speed will not take effect until the HC-05 is reset. If you have wired the STATE signal to RESET the controller, then reconnecting will restart _baudat_ to detect the new rate.
 
 To send arbitrary `AT` commands, answer `n`/`N`  to the first prompt. _baudat_ will then loop:
 * prompt for a command, with `AT` prefix assumed
 * prompt for command mode button press/release
 * display result
 ```
-Set name|polar|bps? [y/n] N
-TODO
+Set basic connectivity parameters? [y/n] N
+
 Enter command: AT+version
 
 Get ready to press HC-05 command mode button...
@@ -111,7 +111,7 @@ Press when LED lights; release when LED flashes.
 Ready? [any key]
 
 Go...
-TODO
+
 Result:
 +VERSION:hc01.comV2.1
 OK
@@ -123,9 +123,9 @@ Enter command: AT
 
 _hc05_baudat_  is written for to compile and run on [UNO](https://store.arduino.cc/usa/arduino-uno-rev3)-like ATmega328p boards and [Digispark](http://digistump.com/products/1)-like ATtiny85 boards. It may work on others.
 
-For **Digispark** boards, _baudat_ prefers Jose Rios' [SoftSerial-INT0](https://github.com/J-Rios/Digispark_SoftSerial-INT0/archive/master.zip) library which intrinsically requires serial RX on pin 2. _baudat_ assumes the LED is on pin 1 and uses pin 0 for serial TX. Compiling for Digispark _without_ SoftSerial-INT0 will omit support for 115,200 bps and arbitrary AT commands. Some early Digispark boards have the LED on pin 0, in which case the sketch will need editing to swap the definitions of `LED_BUILTIN` and `serialRxPin`.
+For **Digispark** boards, _baudat_ requires Jose Rios' [SoftSerial-INT0](https://github.com/J-Rios/Digispark_SoftSerial-INT0/archive/master.zip) library which intrinsically requires serial RX on pin 2. _baudat_ assumes the LED is on pin 1 and uses pin 0 for serial TX. Some early Digispark boards have the LED on pin 0, in which case edit the sketch to swap the definitions of `LED_BUILTIN` and `serialRxPin`.
 
-Digispark (i.e. ATtiny85 with micronucleus bootloader) clock calibration is good for temperatures close (how close?) to when the board was last powered up while plugged into a live USB device (I think). Some early and/or Digistump-branded Digispark boards use a bootloader that calibrates the clock only when connected to a real USB host. A bootloader [upgrade](https://github.com/micronucleus/micronucleus/tree/master/upgrade) will solve that (not-so-old versions configure OSCCAL_SAVE_CALIB [here](https://github.com/micronucleus/micronucleus/blob/master/firmware/configuration/t85_default/bootloaderconfig.h).)
+Digispark (i.e. ATtiny85 with micronucleus bootloader) clock calibration is good for temperatures close (how close?) to when the board was last powered up while plugged into a live USB device (I think). Some early and/or Digistump-branded Digispark boards use a bootloader that calibrates the clock _only_ when connected to a real USB host. A bootloader [upgrade](https://github.com/micronucleus/micronucleus/tree/master/upgrade) will solve that (not-so-old versions configure OSCCAL_SAVE_CALIB [here](https://github.com/micronucleus/micronucleus/blob/master/firmware/configuration/t85_default/bootloaderconfig.h).)
 
 
 For **UNO**-like or other boards  _baudat_ uses the hardware serial port, or whatever `Serial` connects to, and explicitly assumes RX on pin 0. 
@@ -166,5 +166,5 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMjAzMzY5OTA1OF19
+eyJoaXN0b3J5IjpbMTg2OTQ3OTAxNl19
 -->
