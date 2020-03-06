@@ -32,12 +32,21 @@
   MIT License & disclaimer https://opensource.org/licenses/MIT
 */
 
+
+#include <limits.h>
+
+
+/***** conditional macros *****/
+
 //#define BITTIMER // uncomment to loop reporting detected bit times & rates
 #define BITTIMERBPS 57600
 
-#ifdef ARDUINO_AVR_DIGISPARK // Runs on Digispark ATtiny85
 
-// The bootloaders on early/real Digispark boards may calibrate clock only when connected to a real USB host.
+#ifdef ARDUINO_AVR_DIGISPARK // Runs on Digispark-like ATtiny85
+
+// Worst case for small flash, big bootloader and no LTO - limits sketch size
+
+// The bootloaders on early/real Digisparks may calibrate clock only when connected to a real USB host.
 // See https://digistump.com/wiki/digispark/tricks "Detect if system clock was calibrated".
 // The "aggressive" micronucleus bootloader does not calibrate the clock.
 
@@ -49,41 +58,47 @@
 const uint8_t serialRxPin = 2; // required by Digispark_SoftSerial-INT0
 SoftSerial mySerial(serialRxPin, 0); // or TX on pin 1 if LED on 0
 #define Serial mySerial
-
 const uint8_t textBufferSize = _SS_MAX_RX_BUFF;
-#define USECVAR 3 // accept +/- 12.5% (1/(2^3)) variation of bit time in uSec
-                  // Digispark clock may vary. In some cases HC-05 can receive what Ds sends
-                  //   but Ds receives only 1st char from HC-05. That's enough to dial down bps.
-                  // TODO better name
+
+#define BITTIMEVAR 3 // accept +/- 12.5% (1/(2^3)) variation of bit time in uSec
+                     // Digispark clock may vary. In some cases HC-05 can receive what Ds sends
+                     //   but Ds receives only 1 good char from HC-05. Enough to dial down bps.
 
 
-#else // not ARDUINO_AVR_DIGISPARK
+#elif defined ARDUINO_AVR_ATTINYX5
+
+// TODO Spence Konde with tweaks that might be in release by whenever you're reading this
+
+#define LED_BUILTIN 1 // early units may have LED on pin 0
+
+#include <SoftwareSerial.h>
+const uint8_t serialRxPin = 2; // if wired for Digispark core + SoftSerial-INT0
+SoftwareSerial mySerial(serialRxPin, 0); // not LED pin
+#define Serial mySerial
+const uint8_t textBufferSize = _SS_MAX_RX_BUFF;
+
+#define BITTIMEVAR 3 // accept +/- 12.5% (1/(2^3)) variation of bit time in uSec
+                     // ATtiny85 clock may vary. At 115200 HC-05 receives what tiny sends
+                     //   but tiny receives only few good chars from HC-05. Enough to dial down bps.
+#else
 
 
-
+// not a Digispark or similar ATtiny85 board
 // assume hardware serial with receive on pin 0
 const uint8_t serialRxPin = 0;
 const uint8_t textBufferSize = SERIAL_RX_BUFFER_SIZE;
-#define USECVAR 4 // accept +/- 6.35% (1/(2^4)) variation of bit time
-                  // Expect accurate clock. 5 (+/-3%) would likely work.
+#define BITTIMEVAR 4 // accept +/- 6.35% (1/(2^4)) variation of bit time
+                     // Expect accurate clock. 5 (+/-3%) would likely work.
 
 
-#endif // not ARDUINO_AVR_DIGISPARK
+#endif
 
 
-#include <limits.h>
+/***** constants *****/
 
-long bps = 0;
-int bitTime; // microseconds
-const uint8_t samples = 8; // number of mark/1/high bits to try to measure
-                           // any >1 non-extended ASCII chars will have 010 msb-stop-start sequence
-                           // assuming no parity & stop bit is one bit time
-                           // send 0x0000 to time stop bit
 const uint8_t maxNameLen = 32; // max 32 chars per at least one reference
 
-char textBuffer[textBufferSize+1]; // +1 for a null beyond end of full buffer
-uint8_t polarity;
-
+const uint8_t samples = 8; // number of mark/1/high bits sample attempts per rate detect attempt
 
 struct rateParms {
   long bps; // "standard" bit rate
@@ -92,21 +107,19 @@ struct rateParms {
 
 const struct rateParms rateParms[] {
 	
-  #ifndef ARDUINO_AVR_DIGISPARK // don't let Digispark set a speed it can't reconnect to
-  {500000, 2}, // possible with hw serial at 16MHz but not commonly supported by SPP modules
-//{460800, 2}, // commonly supported by SPP modules but not possible with hw serial at 16MHz
+  #if !defined ARDUINO_AVR_DIGISPARK && ! defined ARDUINO_AVR_ATTINYX5
+  // don't let ATtiny set a speed it can't reconnect to
+  {500000, 2},   // possible with hw serial at 16MHz but not commonly supported by SPP modules
+  //{460800, 2}, // commonly supported by SPP modules but not possible with hw serial at 16MHz
   {230400, 4},
   #endif
 
-  #if !defined ARDUINO_AVR_DIGISPARK || defined SoftSerialINT0_h
   {115200, 9}, // ok for not-Digispark or Digispark with SoftSerial_INT0 (SS_INT0 receive not bulletproof - go slower to set a long bt name)
-  #endif
-
   {57600, 17},
   {38400, 26},
-//  {28800, 35}, // not used by known SPP modules
+//{28800, 35}, // not used by known SPP modules
   {19200, 52},
-//  {14400, 69}, // not used by known SPP modules
+//{14400, 69}, // not used by known SPP modules
   {9600, 104},
   {4800, 208},
   {2400, 417}
@@ -114,92 +127,45 @@ const struct rateParms rateParms[] {
 
 const uint8_t numRates = (sizeof(rateParms) / sizeof(struct rateParms));
 
-///////////////////////////
 
-void discardInput() {
-  delay(5); // follow-on bytes can be slow
-  while (Serial.available()) {
-    Serial.read();
-    delay(5);
-  }
-}
+/***** global variables (because microcontroller) *****/
 
-boolean yorn() {
-  char inChar;
-  discardInput();
-  Serial.print(F(" [y/n] "));
-  do {
-    while (!Serial.available());
-    inChar = Serial.read() & 0b11011111; // fold case
-  } while (inChar != 'Y' && inChar != 'N');
-  Serial.println(inChar);
-  return (inChar == 'Y');
-}
+long bps = 0;
+int bitTime; // microseconds
+char textBuffer[textBufferSize+1]; // +1 for a null beyond end of full buffer
+uint8_t polarity;
 
-void commandStart() {
-  Serial.println(F("Get ready to press HC-05 command mode button ..."));
-  Serial.println(F("Press when LED lights; release when LED flashes."));
-  discardInput();
-  Serial.println(F("Ready? [any key]"));
-  while (!Serial.available());
-  discardInput();
-  Serial.println(F("\nGo..."));
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(1500);
-}
 
-void commandStop() {
-  Serial.flush();
-  for (uint8_t a=0; a<11; a++) { //five flashes then off (if on at start)
-    delay(100);
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
-  }
-  delay(500);
-}
 
-uint8_t readText(char *buffer, uint8_t length, unsigned long timeout) {
-  // - read printable text up to next control character or timeout
-  // - returns # characters read
-  // - blunt solution for CR vs LF vs CRLF
-  // - "printable" is loosely defined as ASCII values >= 32 (space)
-  //   which should be good up to 126 then gets questionable
-  // - single byte index assumes buffer <= 255 bytes (256 == 0)
-  unsigned long startMillis = millis();
-  uint8_t index = 0;
-  int c;
-  while (index < length) {
-    do {
-      c = Serial.read();
-    } while ((c == -1) && (millis() - startMillis < timeout));
-    if (c < 32) break; // control character or timeout
-    buffer[index++] = (char)c;
-  }
-  return(index);
-}
+/***** setup() & loop() (because Arduino) *****/
 
-// Yes, this setup() is loaded. Most of this sketch is run-once linear/procedural work.
-// The part that might loop productively is in loop().
+
 void setup()
 {
-  // TODO benefit?
-  //pinMode(serialRxPin, INPUT);      // make sure serial in is a input pin
-  //digitalWrite (serialRxPin, HIGH); // pull up enabled just for noise protection
+  // Yes, most of this sketch happens in a straight line through setup()
+  // The part that might loop productively is in loop()
+  
   pinMode(LED_BUILTIN, OUTPUT);
   
-  // blast banner at all rates - should display one recognizable number amidst noise
-  // and flash LED a bit to show sketch startup
+  // blast banner at all rates
+  // should display one recognizable bps number amidst noise
+  // ...and flash LED a bit to show sketch startup
   for (uint8_t a = 0; a < numRates; a++)
   {
     digitalWrite (LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
     Serial.begin(rateParms[a].bps);
     Serial.print(F("\n\nThis is "));
     Serial.print(rateParms[a].bps, DEC);
-    Serial.println(F(" bps. Type something. 'U' is robust.\n")); //'U' = x10101010101x (8N)
+    Serial.println(F(" bps. Type something. 'U' is robust.\n")); //'U' = x10101010101x (8 bits no parity)
+    Serial.flush();
     Serial.end();
     delay(2); // extend stop condition before continue at slower rate
   }
   digitalWrite (LED_BUILTIN, LOW);
+
+  
   /*
+   * TODO clean up
    * Detect bit rate
    * loop
    * * loop
@@ -207,9 +173,10 @@ void setup()
    * * compare with expected bitTimes +/- fraction
    * until a measured bit period matches
    */
+   // any >1 non-extended ASCII chars will have 010 msb-stop-start sequence
+   // assuming no parity & stop bit is one bit time
+   // send 0x0000 to time stop bit
   #ifdef BITTIMER // just loop reporting detecting times/rates
-  Serial.begin(BITTIMERBPS);
-  Serial.println(F("\nBit Timer\n"));
   do {
     bps=0;
   #endif
@@ -230,17 +197,19 @@ void setup()
     }
     
     uint8_t a = 0;
-    while (a != numRates && bitTime > rateParms[a].uSec + (rateParms[a].uSec >> USECVAR ? rateParms[a].uSec >> USECVAR : 1 /*hack: 230400 often 5uSec*/)) a++;
-    if (a < numRates && bitTime >= rateParms[a].uSec - (rateParms[a].uSec >> USECVAR))
+    while (a != numRates && bitTime > rateParms[a].uSec + (rateParms[a].uSec >> BITTIMEVAR ? rateParms[a].uSec >> BITTIMEVAR : 1 /*hack: 230400 often 5uSec*/)) a++;
+    if (a < numRates && bitTime >= rateParms[a].uSec - (rateParms[a].uSec >> BITTIMEVAR))
       bps = rateParms[a].bps;
 
     #ifdef BITTIMER
     if (bitTime != rateParms[numRates - 1].uSec * 2) {
+      Serial.begin(BITTIMERBPS);
       Serial.print(F("bitTime "));
       Serial.println(bitTime, DEC);
       Serial.print(F("bps "));
       Serial.println(bps, DEC);
       delay(500);
+      Serial.end();
     }
     #endif
 
@@ -337,6 +306,7 @@ void setup()
     Serial.println(F(",0,0"));
     delay(100);
 
+
     commandStop();
 
 
@@ -373,4 +343,70 @@ void loop()
   Serial.println(F("\nResult:"));
   Serial.println(textBuffer);
   
+}
+
+
+
+/***** functions *****/
+
+
+boolean yorn() {
+  char inChar;
+  discardInput();
+  Serial.print(F(" [y/n] "));
+  do {
+    while (!Serial.available());
+    inChar = Serial.read() & 0b11011111; // fold case
+  } while (inChar != 'Y' && inChar != 'N');
+  Serial.println(inChar);
+  return (inChar == 'Y');
+}
+
+void discardInput() {
+  delay(5); // follow-on bytes can be slow
+  while (Serial.available()) {
+    Serial.read();
+    delay(5);
+  }
+}
+
+uint8_t readText(char *buffer, uint8_t length, unsigned long timeout) {
+  // - read printable text up to next control character or timeout
+  // - returns # characters read
+  // - blunt solution for CR vs LF vs CRLF
+  // - "printable" is loosely defined as ASCII values >= 32 (space)
+  //   which should be good up to 126 then gets questionable
+  // - single byte index assumes buffer <= 255 bytes (256 == 0)
+  unsigned long startMillis = millis();
+  uint8_t index = 0;
+  int c;
+  while (index < length) {
+    do {
+      c = Serial.read();
+    } while ((c == -1) && (millis() - startMillis < timeout));
+    if (c < 32) break; // control character or timeout
+    buffer[index++] = (char)c;
+  }
+  return(index);
+}
+
+void commandStart() {
+  Serial.println(F("Get ready to press HC-05 command mode button ..."));
+  Serial.println(F("Press when LED lights; release when LED flashes."));
+  discardInput();
+  Serial.println(F("Ready? [any key]"));
+  while (!Serial.available());
+  discardInput();
+  Serial.println(F("\nGo..."));
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(1500);
+}
+
+void commandStop() {
+  Serial.flush();
+  for (uint8_t a=0; a<11; a++) { //five flashes then off (if on at start)
+    delay(100);
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); 
+  }
+  delay(500);
 }
