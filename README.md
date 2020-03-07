@@ -165,10 +165,13 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 current pulseIn accurate, but SS0 115.2 breaks but SoftwareSerial (not SoftSerial) works 115.2
 vs. Digispark ~5% fast (525/526uSec for 500) but works including SS0 115.2
 
+TODO reset delay/repeat
+
+
 TODO SS0 has set[RT]X in constructor.
 someone sed moved to begin in dist lib?
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTc3MjQyNTAzOF19
+eyJoaXN0b3J5IjpbMTQ5NTEwMjUyLDE3NzI0MjUwMzhdfQ==
 -->
