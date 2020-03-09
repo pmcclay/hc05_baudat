@@ -186,10 +186,11 @@ TODO SS_0 notes
 . pin setup in constructor not begin
 . flush is recv clear not send wait (which would be nop?)
 
-T
+TODO +uart; +reset; blink; connect 38400; +reset
+
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTgwNDQyMTY0MSwxNzIwNTY0ODY5LC0yMD
+eyJoaXN0b3J5IjpbLTgyNDQwMjc2NSwxNzIwNTY0ODY5LC0yMD
 YwMjI0MDI3LDEzMjYxMTI5OTEsLTE2NzA5OTI0NjEsMTQ5NTEw
 MjUyLDE3NzI0MjUwMzhdfQ==
 -->
