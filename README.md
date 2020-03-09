@@ -167,11 +167,29 @@ vs. Digispark ~5% fast (525/526uSec for 500) but works including SS0 115.2
 
 TODO reset delay/repeat
 
+TODO harmonize readme & comments
 
 TODO SS0 has set[RT]X in constructor.
-someone sed moved to begin in dist lib?
+someone sed moved to begin in dist lib? yes
+SK SS?
 
+TODO hw serial end includes flush
+SS_0? no. but write is synchronous (looks so)
+(SS_0 flush is dump recv buffer)
+SK?
+
+TODO use of flush? with SS_0?
+
+TODO does print/println block? looks like all writes returned before print/ln returns so depends on write
+
+TODO SS_0 notes
+. pin setup in constructor not begin
+. flush is recv clear not send wait (which would be nop?)
+
+T
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTQ5NTEwMjUyLDE3NzI0MjUwMzhdfQ==
+eyJoaXN0b3J5IjpbMTgwNDQyMTY0MSwxNzIwNTY0ODY5LC0yMD
+YwMjI0MDI3LDEzMjYxMTI5OTEsLTE2NzA5OTI0NjEsMTQ5NTEw
+MjUyLDE3NzI0MjUwMzhdfQ==
 -->
