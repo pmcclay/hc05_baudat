@@ -171,12 +171,14 @@ TODO harmonize readme & comments
 
 TODO SS0 has set[RT]X in constructor.
 someone sed moved to begin in dist lib? yes
-SK SS?
+SK SS? in constructor
+also current SS.
 
 TODO hw serial end includes flush
 SS_0? no. but write is synchronous (looks so)
 (SS_0 flush is dump recv buffer)
-SK?
+SK? like SS_0.
+Current SS? no, but assume write synch. 
 
 TODO use of flush? with SS_0?
 
@@ -187,10 +189,14 @@ TODO SS_0 notes
 . flush is recv clear not send wait (which would be nop?)
 
 TODO +uart; +reset; blink; connect 38400; +reset
+5976B on DS before try...
 
+TODO flush or delay?
+TODO redefine flush for DS?
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTgyNDQwMjc2NSwxNzIwNTY0ODY5LC0yMD
-YwMjI0MDI3LDEzMjYxMTI5OTEsLTE2NzA5OTI0NjEsMTQ5NTEw
-MjUyLDE3NzI0MjUwMzhdfQ==
+eyJoaXN0b3J5IjpbMTA1MTU0Mzg3MywtMTk4OTE2NzM4OSwtOD
+I0NDAyNzY1LDE3MjA1NjQ4NjksLTIwNjAyMjQwMjcsMTMyNjEx
+Mjk5MSwtMTY3MDk5MjQ2MSwxNDk1MTAyNTIsMTc3MjQyNTAzOF
+19
 -->
