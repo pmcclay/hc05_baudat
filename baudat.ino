@@ -44,7 +44,8 @@
 
 #ifdef ARDUINO_AVR_DIGISPARK // Runs on Digispark-like ATtiny85
 
-// Worst case for small flash, big bootloader and no LTO - limits sketch size
+// Worst case for small flash, big bootloader and no LTO
+// This is the target for compactness
 
 // The bootloaders on early/real Digisparks may calibrate clock only when connected to a real USB host.
 // See https://digistump.com/wiki/digispark/tricks "Detect if system clock was calibrated".
@@ -165,7 +166,7 @@ void setup()
 
   
   /*
-   * TODO clean up
+   * TODO clean up comment
    * Detect bit rate
    * loop
    * * loop
@@ -234,7 +235,7 @@ void setup()
     if (yorn()) {
       discardInput();
       Serial.print(F("\nNew name: "));
-      textBuffer[readText(textBuffer, maxNameLen, ULONG_MAX)] = '\0';
+      textBuffer[read7BitText(textBuffer, maxNameLen, ULONG_MAX)] = '\0';
       Serial.println(textBuffer);
     } else textBuffer[0] = '\0'; // null name = no change
   
@@ -326,7 +327,7 @@ void loop()
 
   Serial.print(F("\nEnter command: AT"));
   discardInput();
-  textBuffer[readText(textBuffer, textBufferSize-1, ULONG_MAX)] = '\0'; // read up to CR or LF and add null terminator to make a string
+  textBuffer[read7BitText(textBuffer, textBufferSize-1, ULONG_MAX)] = '\0'; // read up to CR or LF and add null terminator to make a string
   Serial.println(textBuffer);
   Serial.println();
   
@@ -336,7 +337,7 @@ void loop()
   Serial.print(F("AT"));
   Serial.println(textBuffer);
   Serial.flush();
-  textBuffer[readText(textBuffer, textBufferSize-1, 1000)] = '\0'; // read for in ~1 second and add null terminator to make a string
+  textBuffer[read7BitText(textBuffer, textBufferSize-1, 1000)] = '\0'; // read for in ~1 second and add null terminator to make a string
 
   commandStop();
 
@@ -370,7 +371,7 @@ void discardInput() {
   }
 }
 
-uint8_t readText(char *buffer, uint8_t length, unsigned long timeout) {
+uint8_t read7BitText(char *buffer, uint8_t length, unsigned long timeout) {
   // - read printable text up to next control character or timeout
   // - returns # characters read
   // - blunt solution for CR vs LF vs CRLF
@@ -384,8 +385,14 @@ uint8_t readText(char *buffer, uint8_t length, unsigned long timeout) {
     do {
       c = Serial.read();
     } while ((c == -1) && (millis() - startMillis < timeout));
-    if (c < 32) break; // control character or timeout
-    buffer[index++] = (char)c;
+    if (c < ' ') break; // control character or timeout
+    if (!(c & 0b10000000)) { // ignore > 7bit chars
+      if (c == 0b01111111) { // DEL
+        if (index != 0) index--;
+      } else {
+        buffer[index++] = (char)c; // ' ' <= c < DEL
+      }
+    } // handling DEL & hi bit adds just 4 bytes.
   }
   return(index);
 }
