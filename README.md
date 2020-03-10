@@ -178,7 +178,7 @@ TODO hw serial end includes flush
 SS_0? no. but write is synchronous (looks so)
 (SS_0 flush is dump recv buffer)
 SK? like SS_0.
-Current SS? no, but assume write synch. 
+Current SS? no, but assume write synch. - but flush is empty fcn w/comment no tx buffering i.e. semantic change applied.
 
 TODO use of flush? with SS_0?
 
@@ -192,11 +192,11 @@ TODO +uart; +reset; blink; connect 38400; +reset
 5976B on DS before try...
 
 TODO flush or delay?
-TODO redefine flush for DS?
+TODO redefine flush for DS? KS?
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTA1MTU0Mzg3MywtMTk4OTE2NzM4OSwtOD
-I0NDAyNzY1LDE3MjA1NjQ4NjksLTIwNjAyMjQwMjcsMTMyNjEx
-Mjk5MSwtMTY3MDk5MjQ2MSwxNDk1MTAyNTIsMTc3MjQyNTAzOF
-19
+eyJoaXN0b3J5IjpbLTEyNDAxNjgwODEsLTE5ODkxNjczODksLT
+gyNDQwMjc2NSwxNzIwNTY0ODY5LC0yMDYwMjI0MDI3LDEzMjYx
+MTI5OTEsLTE2NzA5OTI0NjEsMTQ5NTEwMjUyLDE3NzI0MjUwMz
+hdfQ==
 -->
