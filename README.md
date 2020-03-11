@@ -212,14 +212,12 @@ correct: dist ss flush is empty fcn with comment re no tx buffering
 TODO flush or delay?
 or flush & delay? or no delay because e.g. +reset won't happen b4 hc ready to parse it
 
-TODO redefine flush for DS? KS?
-or comment re harmlessness
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMjYxNzMyMjEzLC0xNzcwMjU5NzE0LDIxND
-UxMjIwNjAsLTEyNDAxNjgwODEsLTE5ODkxNjczODksLTgyNDQw
-Mjc2NSwxNzIwNTY0ODY5LC0yMDYwMjI0MDI3LDEzMjYxMTI5OT
-EsLTE2NzA5OTI0NjEsMTQ5NTEwMjUyLDE3NzI0MjUwMzhdfQ==
-
+eyJoaXN0b3J5IjpbLTE5MTM0MjcxMiwyNjE3MzIyMTMsLTE3Nz
+AyNTk3MTQsMjE0NTEyMjA2MCwtMTI0MDE2ODA4MSwtMTk4OTE2
+NzM4OSwtODI0NDAyNzY1LDE3MjA1NjQ4NjksLTIwNjAyMjQwMj
+csMTMyNjExMjk5MSwtMTY3MDk5MjQ2MSwxNDk1MTAyNTIsMTc3
+MjQyNTAzOF19
 -->
