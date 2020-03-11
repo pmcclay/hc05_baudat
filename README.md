@@ -161,42 +161,65 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
  Bit rate detection evolved from example by retrolefty:
   https://forum.arduino.cc/index.php?topic=98911.15 posted 30 March 2012
 
-//#ifdef ARDUINO_AVR_ATTINYX5 -- maybe when pulseIn() works better TODO to readme
-current pulseIn accurate, but SS0 115.2 breaks but SoftwareSerial (not SoftSerial) works 115.2
-vs. Digispark ~5% fast (525/526uSec for 500) but works including SS0 115.2
-
-TODO reset delay/repeat
+#ifdef ARDUINO_AVR_ATTINYX5 w/tweaks TODO to readme
 
 TODO harmonize readme & comments
 
-TODO SS0 has set[RT]X in constructor.
-someone sed moved to begin in dist lib? yes
-SK SS? in constructor
-also current SS.
 
-TODO hw serial end includes flush
-SS_0? no. but write is synchronous (looks so)
-(SS_0 flush is dump recv buffer)
-SK? like SS_0.
-Current SS? no, but assume write synch. - but flush is empty fcn w/comment no tx buffering i.e. semantic change applied.
+-----
+TODO  re distro variations 
+
+SK:
+current pulseIn accurate
+but SS0 115.2 breaks
+but SoftwareSerial (is not SoftSerial) works 115.2
+
+DS:
+pulseIn() ~5% fast (525/526uSec for 500) but works
+SS0 works at 115.2 (mod long input strings)
+
+Serial lib issues:
+* set[RT]X in constructor (vs begin)
+* * DS SS0
+* * current distro SS
+* * SK SS
+* * **not** dist hw serial - fixed per issue
+* does serial end flush?
+* * DS SS0 no. but write is sync so ok
+* * SK SS no. but write is sync so ok
+* * dist SS no. but write is sync and comment makes sense so more ok
+* * dist hw serial - yes
+* serial flush dumps input
+* * DS SS0
+* * SK SS
+* * **not** dist SS 
+
+
+
+
+
+
 
 TODO use of flush? with SS_0?
+relevant for hardware serial
+should be nop for software serial, but tiny SS libs retain clear-input semantic, which is harmless in this case.
+but pointless code is to be avoided on tinys
+correct: dist ss flush is empty fcn with comment re no tx buffering
 
-TODO does print/println block? looks like all writes returned before print/ln returns so depends on write
 
-TODO SS_0 notes
-. pin setup in constructor not begin
-. flush is recv clear not send wait (which would be nop?)
 
-TODO +uart; +reset; blink; connect 38400; +reset
-5976B on DS before try...
 
 TODO flush or delay?
+or flush & delay? or no delay because e.g. +reset won't happen b4 hc ready to parse it
+
 TODO redefine flush for DS? KS?
+or comment re harmlessness
+
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTEyNDAxNjgwODEsLTE5ODkxNjczODksLT
-gyNDQwMjc2NSwxNzIwNTY0ODY5LC0yMDYwMjI0MDI3LDEzMjYx
-MTI5OTEsLTE2NzA5OTI0NjEsMTQ5NTEwMjUyLDE3NzI0MjUwMz
-hdfQ==
+eyJoaXN0b3J5IjpbMjYxNzMyMjEzLC0xNzcwMjU5NzE0LDIxND
+UxMjIwNjAsLTEyNDAxNjgwODEsLTE5ODkxNjczODksLTgyNDQw
+Mjc2NSwxNzIwNTY0ODY5LC0yMDYwMjI0MDI3LDEzMjYxMTI5OT
+EsLTE2NzA5OTI0NjEsMTQ5NTEwMjUyLDE3NzI0MjUwMzhdfQ==
+
 -->
