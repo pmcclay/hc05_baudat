@@ -205,6 +205,7 @@ Serial lib issues:
 
 
 
+
 TODO use of flush? with SS_0?
 relevant for hardware serial
 should be nop for software serial, but tiny SS libs retain clear-input semantic, which is harmless in this case.
@@ -220,5 +221,5 @@ or flush & delay? or no delay because e.g. +reset won't happen b4 hc ready to pa
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTA3MjY0NTE1LDE3NDgwNDkyMjddfQ==
+eyJoaXN0b3J5IjpbLTIyOTAyNjA2MywxNzQ4MDQ5MjI3XX0=
 -->
