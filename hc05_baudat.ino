@@ -34,7 +34,7 @@
           Prompt user to release HC-05 command mode
           Display stored HC-05 response
 
-  Readme at github TODO
+  See README & updates at https://github.com/pmcclay/hc05_baudat/
 
   Copyright 2019 Paul McClay <mcclay at g mail>
   MIT License & disclaimer https://opensource.org/licenses/MIT
@@ -259,7 +259,7 @@ do {
   Serial.print(F("\n\nHello at "));
   Serial.print(bps, DEC);
   Serial.println(F(" bps"));
-  Serial.println(F("\nbaudat HC-05 config tool\n"));
+  Serial.println(F("\nbaudat HC-05 config/command tool\n"));
 
   Serial.print(F("Set BT name, \"polar\" & serial bit rate?"));
   if (yorn()) { 
