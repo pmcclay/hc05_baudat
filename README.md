@@ -163,6 +163,8 @@ The code assumes the Digistump Digispark board package and SoftSerial_INT0 libra
 
 #ifdef ARDUINO_AVR_ATTINYX5 w/tweaks TODO to readme
 
+TODO V3 can reset/change bps s/dropping BT
+
 TODO harmonize readme & comments
 
 
@@ -192,7 +194,10 @@ Serial lib issues:
 * serial flush dumps input
 * * DS SS0
 * * SK SS
-* * **not** dist SS 
+* * **not** dist SS
+* serial.end breaks delay()
+* * DS SS0
+* * SK SS
 
 
 
@@ -215,9 +220,5 @@ or flush & delay? or no delay because e.g. +reset won't happen b4 hc ready to pa
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTE5MTM0MjcxMiwyNjE3MzIyMTMsLTE3Nz
-AyNTk3MTQsMjE0NTEyMjA2MCwtMTI0MDE2ODA4MSwtMTk4OTE2
-NzM4OSwtODI0NDAyNzY1LDE3MjA1NjQ4NjksLTIwNjAyMjQwMj
-csMTMyNjExMjk5MSwtMTY3MDk5MjQ2MSwxNDk1MTAyNTIsMTc3
-MjQyNTAzOF19
+eyJoaXN0b3J5IjpbMTc0ODA0OTIyN119
 -->
