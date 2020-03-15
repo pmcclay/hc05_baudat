@@ -196,8 +196,8 @@ Serial lib issues:
 * * SK SS
 * * **not** dist SS
 * serial.end breaks delay()
-* * DS SS0
-* * SK SS
+* * DS SS0 - ends w/cli() i.e. disables all interrupts - and delay uses micros which depends on interrupts to manage timer rollover and what happens if no interrupt?
+* * SK SS - end appears to only disable pin change interrupts. ?.
 
 
 
@@ -220,5 +220,5 @@ or flush & delay? or no delay because e.g. +reset won't happen b4 hc ready to pa
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbMTc0ODA0OTIyN119
+eyJoaXN0b3J5IjpbMTA3MjY0NTE1LDE3NDgwNDkyMjddfQ==
 -->
