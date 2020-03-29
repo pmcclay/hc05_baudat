@@ -82,8 +82,6 @@ Baud:  115200
 Get ready to press HC-05 command mode button...
 Press when LED lights; release when LED flashes.
 Ready? [any key]
-
-Go...
 ```
 While watching the LED -- on the controller board, not the HC-05 -- send anything when ready to press & release the command button as indicated.
 
@@ -224,6 +222,6 @@ or flush & delay? or no delay because e.g. +reset won't happen b4 hc ready to pa
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTU4MjA0MjU3LDU4OTU5NDQ3MSwtMjI5MD
-I2MDYzLDE3NDgwNDkyMjddfQ==
+eyJoaXN0b3J5IjpbODg5OTU5OTMsLTU4MjA0MjU3LDU4OTU5ND
+Q3MSwtMjI5MDI2MDYzLDE3NDgwNDkyMjddfQ==
 -->
