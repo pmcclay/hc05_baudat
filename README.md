@@ -82,6 +82,8 @@ Baud:  115200
 Get ready to press HC-05 command mode button...
 Press when LED lights; release when LED flashes.
 Ready? [any key]
+
+Go...
 ```
 While watching the LED -- on the controller board, not the HC-05 -- send anything when ready to press & release the command button as indicated.
 
@@ -91,11 +93,12 @@ While you're holding the command button, _baudat_ will command the HC-05 as spec
 AT+NAME=My_New_BT_Widget
 AT+POLAR=1,0
 AT+UART=115200,0,0
+AT+RESET [[with the command button held,resets into 38.4kbps command mode]]
+         [[LED flashes to signal release command button]]
+AT+RESET [[sent at 38.4kbps; resets to configured rate]]
 ```
-_baudat_ will then repeat forever:
-`power cycle/reset HC-05`
 
-A new speed will not take effect until the HC-05 is reset. If you have wired the STATE signal to RESET the controller, then reconnecting will restart _baudat_ to detect the new rate.
+Resets may or may not drop BT connection, depending on HC-05 firmware versions.
 
 To send arbitrary `AT` commands, answer `n`/`N`  to the first prompt. _baudat_ will then loop:
 * prompt for a command, with `AT` prefix assumed
@@ -221,5 +224,6 @@ or flush & delay? or no delay because e.g. +reset won't happen b4 hc ready to pa
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbLTIyOTAyNjA2MywxNzQ4MDQ5MjI3XX0=
+eyJoaXN0b3J5IjpbLTU4MjA0MjU3LDU4OTU5NDQ3MSwtMjI5MD
+I2MDYzLDE3NDgwNDkyMjddfQ==
 -->
