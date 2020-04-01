@@ -6,8 +6,8 @@
   * autodetect serial bit rate
   * guided configuration or arbitrary AT commands
   * compatible with Digispark (ATtiny85)
-  * suitable for dedicated device
-  * e.g. TODO hw project link
+  * suitable for dedicated device, like:
+  * * https://www.instructables.com/id/HC-05-Serial-Configuration-Over-Bluetooth
 
   Setup:
     Not much.
