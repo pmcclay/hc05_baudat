@@ -11,8 +11,7 @@ Use _hc05_baudat_ to set serial BAUD & issue AT commands -- with a hat tip to É
     **or**
     arbitrary AT commands
   * compatible with [Digispark](http://digistump.com/products/1) ATtiny85 board & [clones](https://www.aliexpress.com/wholesale?SearchText=digispark)
-  * suitable for dedicated device
-  * e.g. TODO hw project link
+  * suitable for a [dedicated device](https://www.instructables.com/id/HC-05-Serial-Configuration-Over-Bluetooth)
 
 Written for the Arduino "IDE".
 
@@ -20,7 +19,7 @@ This README will often use _baudat_ in place of _hc05_baudat_. The only collisio
 
 ## Usage
 
-Compile and upload the _baudat_ sketch and connect an HC-05 module to controller board serial pins. Maybe build a tidy dedicated device. More board & connection info below.
+Compile and upload the _baudat_ sketch and connect an HC-05 module to controller board serial pins. Maybe build a tidy [widget](https://www.instructables.com/id/HC-05-Serial-Configuration-Over-Bluetooth). More board & connection info below.
 
 Pair a Bluetooth device with the HC-05 and connect to it using a [Bluetooth terminal app](https://play.google.com/store/apps/details?id=de.kai_morich.serial_bluetooth_terminal).  BLE devices, if any are similar enough for this to work, do not require pairing.
 
