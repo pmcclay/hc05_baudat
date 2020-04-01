@@ -39,9 +39,9 @@ Now you know the SPP module's configured bit rate but _baudat_ does not know whi
 ```
 Hello at 57600 bps
 
-baudat HC-05 configuration tool
+baudat HC-05 config tool
 
-Set basic connectivity parameters? [y/n]
+Set BT name, "polar" & serial bit rate? [y/n]
 ```
 
 Answer `y`/`Y` to begin guided configuration of commonly configured parameters, or `n`/`N`  to send arbitrary AT commands to the HC-05.
@@ -54,7 +54,7 @@ The "commonly configured parameters" include:
 _baudat_'s prompts and responses for guided configuration should be fairly self-explanatory:
 
 ```
-Set basic connectivity parameters? [y/n] Y
+Set BT name, "polar" & serial bit rate? [y/n] Y
 
 Set Bluetooth device name? [y/n] Y
 
@@ -76,11 +76,12 @@ _baudat_ will repeat the new values to configure, advise when to press & release
 ```
 ==== New parameters ====
 Name: My_New_BT_Widget
-Connected signal level: 0
+Connected STATE signal level: 0
 Baud:  115200
 
 Get ready to press HC-05 command mode button...
 Press when LED lights; release when LED flashes.
+
 Ready? [any key]
 ```
 While watching the LED -- on the controller board, not the HC-05 -- send anything when ready to press & release the command button as indicated.
@@ -96,7 +97,7 @@ AT+RESET [[with the command button held,resets into 38.4kbps command mode]]
 AT+RESET [[sent at 38.4kbps; resets to configured rate]]
 ```
 
-Resets may or may not drop BT connection, depending on HC-05 firmware versions.
+Resets may or may not drop BT connection, depending on HC-05 firmware versions. Très slick to change bit rate & reset without dropping BT session.
 
 To send arbitrary `AT` commands, answer `n`/`N`  to the first prompt. _baudat_ will then loop:
 * prompt for a command, with `AT` prefix assumed
@@ -122,7 +123,7 @@ Enter command: AT
 
 ## Boards & compiling
 
-_hc05_baudat_  is written for to compile and run on [UNO](https://store.arduino.cc/usa/arduino-uno-rev3)-like ATmega328p boards and [Digispark](http://digistump.com/products/1)-like ATtiny85 boards. It may work on others.
+_hc05_baudat_  is written to compile and run on [UNO](https://store.arduino.cc/usa/arduino-uno-rev3)-like ATmega328p boards and [Digispark](http://digistump.com/products/1)-like ATtiny85 boards. It may work on others with a Serial class and RX on pin 0.
 
 For **Digispark** boards, _baudat_ requires Jose Rios' [SoftSerial-INT0](https://github.com/J-Rios/Digispark_SoftSerial-INT0/archive/master.zip) library which intrinsically requires serial RX on pin 2. _baudat_ assumes the LED is on pin 1 and uses pin 0 for serial TX. Some early Digispark boards have the LED on pin 0, in which case edit the sketch to swap the definitions of `LED_BUILTIN` and `serialRxPin`.
 
@@ -133,17 +134,16 @@ For **UNO**-like or other boards  _baudat_ uses the hardware serial port, or wha
 
 ## Wiring
 
-There are many descriptions of wiring HC-05 or similar modules to various Arduino-ish boards for various purposes. [This diagram](http://www.buildlog.net/blog/wp-content/uploads/2017/10/hc-05_prog.png) from [This page](http://www.buildlog.net/blog/2017/10/using-the-hc-05-bluetooth-module/) looks appropriate for using _hc05_baudat_ with UNO-like boards. The connection to RESET is helpful but not essential.
+There are many descriptions of wiring HC-05 or similar modules to various Arduino-ish boards for various purposes. [This diagram](http://www.buildlog.net/blog/wp-content/uploads/2017/10/hc-05_prog.png) from [This page](http://www.buildlog.net/blog/2017/10/using-the-hc-05-bluetooth-module/) looks appropriate for using _baudat_ with UNO-like boards. The connection to RESET is helpful but not essential.
 
 The same connection scheme applies for Digispark-like boards with adjustment for the differently shaped board. +5V, GND & RESET should be obvious. Change RX (on the Digispark, connected to TX from the HC-05) to pin 2 and TX (from the Digispark, connected to RX on the HC-05) to pin 0.
-[TODO example]
 
 (It might be that someone thinks HC-05 signal pins tolerate 5V just fine and routinely connects them directly to 5V devices, but I wouldn't know anything about such nonsense. That someone probably punts to resistive dividers in "keeper" builds anyhow.)
 
 
 
 
-## mega tiny
+## mega/tiny
 This sketch should compile for "typical" UNO-like ATmega boards, and for Digispark-like ATtiny85 boards.
 
 Cleaning up a 1.0 version in early 2020 was awkward because the [Digistump ATtiny core](https://github.com/digistump/DigistumpArduino) for Arduino was never perfect and has gone unmaintained for a few years while Spence Konde is actively working on [a superior ATtiny core](https://github.com/SpenceKonde/ATTinyCore) that's _almost_ able to handle this without coding much differently than would be for a mega-only version.
@@ -151,77 +151,10 @@ Cleaning up a 1.0 version in early 2020 was awkward because the [Digistump ATtin
 ### mega
 When compiling for not-Digispark boards this uses hardware serial and assumes RX on pin 0. The code almost uses Serial.readBytes{,Until}() with Serial.setTimeout() but...
 ### tiny
-The code almost uses XXX's packaging of SpenceKonde's tiny core but... pulseIn()'s timing loop is borken in that package. SK has recently (Feb 2020) worked to fix that but XXX's zip XXXversion is less recent and an attempt to cherry pick the pulseIn() fix into XXX didn't work for me. So I'm using the [Digispark](http://digispark.fixme) board package for ATtiny support. That's an unstable state because the Digispark core hasn't been touched in XX years while SK has improved his ATtiny core which XX is packaging with a USB loader. SK's core rocks LTO for packing more code into tiny chips and a more complete Stream class. This sketch as it might be written for mega boards mostly works with the SK/CA package except for inaccuracy of pulseIn(). I could beat on that more, but I already had answers for making it work with the Digispark board package. So at least for now:
-The code assumes the Digistump Digispark board package and SoftSerial_INT0 library LINK with RX/TX on pins 2/0. It includes a tinyReadBytesUntil() function to stand in for the missing Stream operations. Conditionally extending the SoftSerial class to add the missing ops for Digispark works but makes the code too big. The Digispark package includes a SoftSerial library but SoftSerial_INT0 is hundreds of bytes smaller. And faster. 
-
-
-===
-
-
-
- Bit rate detection evolved from example by retrolefty:
-  https://forum.arduino.cc/index.php?topic=98911.15 posted 30 March 2012
-
-#ifdef ARDUINO_AVR_ATTINYX5 w/tweaks TODO to readme
-
-TODO V3 can reset/change bps s/dropping BT
-
-TODO harmonize readme & comments
-
-
------
-TODO  re distro variations 
-
-SK:
-current pulseIn accurate
-but SS0 115.2 breaks
-but SoftwareSerial (is not SoftSerial) works 115.2
-
-DS:
-pulseIn() ~5% fast (525/526uSec for 500) but works
-SS0 works at 115.2 (mod long input strings)
-
-Serial lib issues:
-* set[RT]X in constructor (vs begin)
-* * DS SS0
-* * current distro SS
-* * SK SS
-* * **not** dist hw serial - fixed per issue
-* does serial end flush?
-* * DS SS0 no. but write is sync so ok
-* * SK SS no. but write is sync so ok
-* * dist SS no. but write is sync and comment makes sense so more ok
-* * dist hw serial - yes
-* serial flush dumps input
-* * DS SS0
-* * SK SS
-* * **not** dist SS
-* serial.end breaks delay()
-* * DS SS0 - ends w/cli() i.e. disables all interrupts - and delay uses micros which depends on interrupts to manage timer rollover and what happens if no interrupt?
-* * SK SS - end appears to only disable pin change interrupts. ?.
-
-
-
-
-
-
-
-
-TODO use of flush? with SS_0?
-relevant for hardware serial
-should be nop for software serial, but tiny SS libs retain clear-input semantic, which is harmless in this case.
-but pointless code is to be avoided on tinys
-correct: dist ss flush is empty fcn with comment re no tx buffering
-
-
-
-
-TODO flush or delay?
-or flush & delay? or no delay because e.g. +reset won't happen b4 hc ready to parse it
-
+The code almost uses [this](https://hackaday.io/project/162845-attiny84a-tiniest-development-board/log/159841-json-file-for-attinycore-with-micronucleus-bootloader-and-lto-support) packaging of SpenceKonde's [tiny core](https://github.com/SpenceKonde/ATTinyCore) but... pulseIn()'s timing loop is borken in that package. SK has recently (Feb 2020) worked to [fix](https://github.com/SpenceKonde/ATTinyCore/issues/384) that but the linked package is less recent and an attempt to cherry pick the pulseIn() fix into it didn't work for me. So I'm using the [Digispark](https://digistump.com/wiki/digispark/tutorials/connecting) board package for ATtiny support. That's an unstable state because the Digispark core hasn't been touched in some years while SK has improved his ATtiny core (of which [Mr. van de Bor](https://hackaday.io/svdbor) has packaged a couple revs with the micronucleus USB bootloader). SK's core rocks LTO for packing more code into tiny chips, a more complete Stream class and a "Serial" class (but RX/TX reversed). This sketch as it might be written for mega boards mostly works with the SK/CA package except for inaccuracy of pulseIn(). I could beat on that more, and I've hacked a {platform,boards}.txt for a more recent SK release (+pulseIn() fix) that works, but I already had answers for making it work with the Digispark board package. So at least for now:
+The code assumes the Digistump Digispark board package and [SoftSerial_INT0](https://github.com/J-Rios/Digispark_SoftSerial-INT0) library with RX/TX on pins 2/0. The Digispark core has a runty Streams class. Conditionally extending the SoftSerial class to add missing Streams ops for Digispark worked but made the complete code too big. The Digispark package includes a SoftSerial library but SoftSerial_INT0 is hundreds of bytes smaller. And faster. 
 
 
 <!--stackedit_data:
-eyJoaXN0b3J5IjpbODg5OTU5OTMsLTU4MjA0MjU3LDU4OTU5ND
-Q3MSwtMjI5MDI2MDYzLDE3NDgwNDkyMjddfQ==
+eyJoaXN0b3J5IjpbMTE3OTgyNjM5XX0=
 -->
