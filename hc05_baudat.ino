@@ -36,7 +36,7 @@
 
   See README & updates at https://github.com/pmcclay/hc05_baudat/
 
-  Copyright 2019 Paul McClay <mcclay at g mail>
+  Copyright 2017-2020 Paul McClay <mcclay at g mail>
   MIT License & disclaimer https://opensource.org/licenses/MIT
 */
 
